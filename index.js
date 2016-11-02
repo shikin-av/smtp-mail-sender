@@ -185,7 +185,7 @@ app.set('views', __dirname + '/templates');
 
 //-------------------------------------------------------------------------------------------------
 app.get('/', function (req, res) {
-	//if (req.session_state.username) {  
+	if (req.session_state.username) {  
 	  console.log('/');
 
 	  folderViewer(config.mailTemplateFolder, templatesMail, emptyFunction);	// смотрим сколько шаблонов
@@ -199,9 +199,9 @@ app.get('/', function (req, res) {
 	      mailerStatus: mailerStatus,
 	      from: mailOptions.fromForUserWatch
 	  });
-	/*}else{
+	}else{
 		res.redirect('/login');
-	}*/
+	}
 });
 
 
@@ -259,12 +259,12 @@ app.post('/', urlencodedParser, function (req, res) {
 
 //**********************************************************
 app.get('/emails', function (req, res) {
-	//if (req.session_state.username) {  
+	if (req.session_state.username) {  
 		res.render('views/emails', {host: config.host, emails_length: emails.length});
 		console.log('/emails');
-	/*}else{
+	}else{
 		res.redirect('/login');
-	}*/
+	}
 });
 //**********************************************************
 app.post('/emails', urlencodedParser, function (req, res) {
