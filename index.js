@@ -31,6 +31,8 @@ var	config = {
 
 var	app = express();
 
+app.use(express.static(__dirname + '/static'));
+
 //------------------------------------------------------------------
 var mailerStatus = 'Готов начать рассылку';
 var locals = {host: config.host}
