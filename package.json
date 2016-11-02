@@ -1,0 +1,31 @@
+{
+  "name": "mailer",
+  "version": "1.0.0",
+  "dependencies": {
+    "body-parser": "^1.15.2",
+    "consolidate": "^0.14.1",
+    "email-templates": "^2.4.1",
+    "express": "^4.14.0",
+    "fast-csv": "^2.3.0",
+    "express-email": "^1.1.1",
+    "handlebars": "^3.0.3",
+    "multiparty": "^4.1.2",
+    "nodemailer": "^2.6.4",
+    "nodemailer-smtp-transport": "^2.7.2",
+    "path": "^0.12.7",
+    "request": "^2.75.0",
+	"client-sessions": "^0.7.0",
+	"util": "^0.10.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": "4.6.x",
+    "npm": "2.15.x"
+  },
+  "author": "shikin.a.v@mail.ru",
+  "license": "ISC",
+  "description": "html-mailer"
+}
