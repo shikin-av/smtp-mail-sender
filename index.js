@@ -35,7 +35,7 @@ app.use(express.static(__dirname + '/static'));
 
 //------------------------------------------------------------------
 var mailerStatus = 'Готов начать рассылку';
-var locals = {host: config.host + '/static'}
+var locals = {host: config.host}
 var templatesMail = [];	// список шаблонов
 var csvFiles = [];	// список csv-файлов
 var emails = [];
