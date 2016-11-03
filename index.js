@@ -45,7 +45,6 @@ var mailOptions = {
 	from: function(){
 		return this.fromForUserWatch + ' <'+config.smtpUser+'>';
 	},
-    to: emails,
     subject: 'Специально для Вас',
     emailTest: 'for.vds@yandex.ru',
     
@@ -149,7 +148,8 @@ csvFilesCallback = function(){
 				fileFinished++;
 				// выборка уникальных emails после прочтения последнего файла
 				if(fileFinished==csvFiles.length){	
-					emails = unique(emails); 
+					emails = unique(emails);
+					//mailOptions.to = emails;	// обновляем список emailov
 
 					console.log('Чтение из ' + csvFiles.length + ' файлов завершено. Всего ' + emails.length + ' адресов');
 					console.log(emails);
@@ -234,7 +234,7 @@ app.post('/', urlencodedParser, function (req, res) {
     	mailerStatus = 'Отправка почты';
     	res.render('views/send', {mailerStatus: mailerStatus});
 	  	console.log('Рассылка началась ..........................................................');
-    	mailerGoSend(mailOptions.to);
+    	mailerGoSend(emails);
     }
 
     if(req.body.type == 'mailerGoTest'){
