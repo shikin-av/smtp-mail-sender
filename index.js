@@ -18,8 +18,8 @@ var nodemailer = require('nodemailer'),
 //app.use(express.logger());
 	 
 var	config = {
-      	host: process.env.HOSTNAME,
-      	port: process.env.PORT,
+      	host: 'http://localhost',
+      	port: 3000,
   		smtpHost: 'mail.nic.ru',
   		smtpPort: 25,
   		smtpUser: 'mailertest@interstudio.club',
@@ -163,17 +163,6 @@ csvFilesCallback = function(){
 folderViewer(config.dbFolder, csvFiles, csvFilesCallback);	
 //-----------------------------------------------------------------
 
-//   Удаление файлов
-deleteFiles = function(){
-	fsUtils.emptyDir(__dirname + '/db', function (err) {
-    	res.render('views/filesDeleted', {host: config.host});	
-    	emails = [];
-	});
-}
-
-
-
-
 //------------------------------------------------------------------
 
 //-----шаблонизатор-------------------------------------------------
@@ -276,8 +265,14 @@ app.get('/emails', function (req, res) {
 app.post('/emails', urlencodedParser, function (req, res) {
 
 	if(req.body.type == 'deleteAllcsvFiles'){
-		
-		deleteFiles();
+		fsUtils.emptyDir(__dirname + '/db', function (err) {
+			if(err){
+				return console.error(err);
+			}else{
+				res.render('views/filesDeleted', {host: config.host});	
+				emails = [];
+		}
+	});
 
 	}else{
 		// загрузка файлов на сервер
