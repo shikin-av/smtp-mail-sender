@@ -170,7 +170,7 @@ $('#deleteAllFilesBtn').on('click', function(){
         },
         dataType: "html",
         success: function (data) {
-            
+           $(document.body).html(data);
         }
     });
 });
