@@ -227,7 +227,7 @@ app.post('/', urlencodedParser, function (req, res) {
 		  	console.log('Рассылка началась ..........................................................');
 	    	mailerGoSend(emails);
 	    }else{
-	    	mailerStatus = 'Нет email-адресов для рассылки. <br><a href="/emails">Загрузите файлы с адресами</a>';
+	    	mailerStatus = 'Нет email-адресов для рассылки. Загрузите файлы с адресами.';
 	    	res.render('views/send', {mailerStatus: mailerStatus});
 	    }
     }
