@@ -24,3 +24,13 @@ input#btnMailerGoSend {
     font-weight: bold;
     color: green;
 }
+input#uploadBtn{
+  font-weight: bold;
+  color: green;
+  margin-bottom: 50px;
+
+}
+input#deleteAllFilesBtn{
+  font-weight: bold;
+  color: red;
+}

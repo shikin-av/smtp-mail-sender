@@ -114,27 +114,8 @@ userLogin = function(){
     }
 }
 
-/*
-uploadFile = function(){
-     inputFiles = $("#uploadFile");
-     fd = new FormData;    
-    
-    for(var i = 0; i<inputFiles.prop('files').length; i++){
-        fd.append('file', inputFiles.prop('files')[i]);    
-    }
 
-    $.ajax({
-        url: location.protocol + '//' + document.domain + ':' + location.port + '/emails',
-        data: fd,
-        processData: false,
-        contentType: false,
-        type: 'POST',
-        success: function (data) {
-            $('.FilesList').html(data);
-        }
-    });
-}
-*/
+
 $(document).ready(function(){
     changeTemplate();   
 });
@@ -161,8 +142,10 @@ $('#uploadFile').on('change', function(){
     //проверка расширения файла
     for(var i=0; i<this.files.length; i++){
         console.log(this.files[i].name);
+
         var curFileExtension = this.files[i].name.split('.');  // массив [имя, расширение]
         curFileExtension = curFileExtension[curFileExtension.length-1]; //расширение
+
         if(curFileExtension != 'csv'){
             alert('Неверный формат файла ' + this.files[i].name);
             $("#uploadBtn").prop('disabled', true); 
@@ -175,4 +158,19 @@ $('#uploadFile').on('change', function(){
 $('#btnLogin').on('click', function(){
     userLogin();
     console.log('userLogin()');
+});
+
+$('#deleteAllFilesBtn').on('click', function(){
+    var type = 'deleteAllcsvFiles';
+    $.ajax({
+        type: "POST",
+        url: location.protocol + '//' + document.domain + ':' + location.port + '/emails',
+        data: {
+            type:type
+        },
+        dataType: "html",
+        success: function (data) {
+            
+        }
+    });
 });

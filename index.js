@@ -11,7 +11,8 @@ var nodemailer = require('nodemailer'),
 	multiparty = require('multiparty'),
 	http = require('http'),
 	util = require('util'),
-	clientSessions = require("client-sessions");
+	clientSessions = require("client-sessions"),
+	fsUtils = require("nodejs-fs-utils");
 	//	config = require('./config');	 
 	 
 //app.use(express.logger());
@@ -160,22 +161,22 @@ csvFilesCallback = function(){
 }
 // читаем адреса из csv-файлов
 folderViewer(config.dbFolder, csvFiles, csvFilesCallback);	
+//-----------------------------------------------------------------
 
-
-
-// fs.createReadStream(__dirname + '/db/izhevsk.csv')
-		
-
-
-
-
+//   Удаление файлов
+deleteFiles = function(){
+	fsUtils.emptyDir(__dirname + '/db', function (err) {
+    	res.render('views/filesDeleted', {host: config.host});	
+    	emails = [];
+	});
+}
 
 
 
 
 //------------------------------------------------------------------
 
-//-----шаблонизатор------------------------------------------
+//-----шаблонизатор-------------------------------------------------
 var templating = require('consolidate');
 app.engine('hbs', templating.handlebars);
 app.set('view engine', 'hbs');    
@@ -231,10 +232,15 @@ app.post('/', urlencodedParser, function (req, res) {
     }
 
     if(req.body.type == 'mailerGoSend'){
-    	mailerStatus = 'Отправка почты';
-    	res.render('views/send', {mailerStatus: mailerStatus});
-	  	console.log('Рассылка началась ..........................................................');
-    	mailerGoSend(emails);
+    	if(emails.length > 0){
+	    	mailerStatus = 'Отправка почты';
+	    	res.render('views/send', {mailerStatus: mailerStatus});
+		  	console.log('Рассылка началась ..........................................................');
+	    	mailerGoSend(emails);
+	    }else{
+	    	mailerStatus = 'Нет email-адресов для рассылки. <br><a href="/emails">Загрузите файлы с адресами</a>';
+	    	res.render('views/send', {mailerStatus: mailerStatus});
+	    }
     }
 
     if(req.body.type == 'mailerGoTest'){
@@ -268,30 +274,33 @@ app.get('/emails', function (req, res) {
 });
 //**********************************************************
 app.post('/emails', urlencodedParser, function (req, res) {
-	// загрузка файлов на сервер
-	var form = new multiparty.Form({
-		uploadDir:  config.dbFolder
-	});
-    form.parse(req, function(err, fields, files) {
-		if (err) {
-			res.writeHead(400, {'content-type': 'text/plain'});	//!!!!!!!!!
-			res.end("invalid request: " + err.message);
-			return;
-		}
-		console.log('Загруженные файлы: ');	
-		for(var i = 0; i<files.upload.length; i++){
-			console.log(files.upload[i].originalFilename);				
-		}
+
+	if(req.body.type == 'deleteAllcsvFiles'){
 		
-      	csvFiles = [];
-    	
-    	folderViewer(config.dbFolder, csvFiles, csvFilesCallback);	// читаем адреса из csv-файлов
-      	res.render('views/filesUploaded', {host: config.host});	 
-      	
-      	
-      	
-      	
-    });
+		deleteFiles();
+
+	}else{
+		// загрузка файлов на сервер
+		var form = new multiparty.Form({
+			uploadDir:  config.dbFolder
+		});
+	    form.parse(req, function(err, fields, files) {
+			if (err) {
+				res.writeHead(400, {'content-type': 'text/plain'});	//!!!!!!!!!
+				res.end("invalid request: " + err.message);
+				return;
+			}
+			console.log('Загруженные файлы: ');	
+			for(var i = 0; i<files.upload.length; i++){
+				console.log(files.upload[i].originalFilename);				
+			}
+			
+	      	csvFiles = [];
+	    	
+	    	folderViewer(config.dbFolder, csvFiles, csvFilesCallback);	// читаем адреса из csv-файлов
+	      	res.render('views/filesUploaded', {host: config.host});	
+	    });
+	}    
 });
 //**********************************************************
 app.get('/login', function (req, res) {

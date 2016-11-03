@@ -15,7 +15,8 @@
     "path": "^0.12.7",
     "request": "^2.75.0",
 	"client-sessions": "^0.7.0",
-	"util": "^0.10.3"
+	"util": "^0.10.3",
+	"nodejs-fs-utils": "^1.0.26"
   },
   "devDependencies": {},
   "scripts": {
