@@ -133,7 +133,29 @@ mailerGoSend = function(to){
 		
 
 }
-
+//-----------------------------------------------------------
+mailerGoTest = function (to) {
+    // Рендер письма
+    currentTemplate.render(locals, function (err, result) {
+        if (err) {
+            return console.error(err)
+        }
+        transporter.sendMail({
+            from: mailOptions.from(),
+            to: to,
+            subject: mailOptions.subject,
+            html: result.html,
+            text: result.text
+        }, function (error, info) {
+            if (error) {
+                return console.log(error);
+            }
+            console.log('------------------------------------------------------------------------');
+            console.log('Сообщение отправлено на адреса: ' + to + '   ' + info.response);
+            mailerStatus = 'Отправка писем завершена';
+        });
+    });
+}
 
 unique = function(arr) {	// удаление повторяющихся emails
   var tempObj = {};
@@ -266,7 +288,7 @@ app.post('/', urlencodedParser, function (req, res) {
     	res.render('views/send', {mailerStatus: mailerStatus});
 	  	console.log('Тестовое письмо ..........................................................');
 	  	mailOptions.emailTest = req.body.adress; 
-	  	mailerGoSend(req.body.adress);	  	
+	  	mailerGoTest(req.body.adress);
     }
 
     if(req.body.type == 'getStatus'){
