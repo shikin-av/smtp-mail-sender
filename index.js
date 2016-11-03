@@ -18,8 +18,8 @@ var nodemailer = require('nodemailer'),
 //app.use(express.logger());
 	 
 var	config = {
-      	host: 'http://localhost',
-      	port: 3000,
+      	host: process.env.HOSTNAME,
+      	port: process.env.PORT,
   		smtpHost: 'mail.nic.ru',
   		smtpPort: 25,
   		smtpUser: 'mailertest@interstudio.club',
