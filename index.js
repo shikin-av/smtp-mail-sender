@@ -99,7 +99,7 @@ mailerGoSend = function(to){
 	var timeForOneSend = setInterval(function(){
 		iOne++;
 				
-		if(iOne == to.length){
+		if(iOne > to.length){
 			clearInterval(timeForOneSend);					
 		}else{
 			// Рендер письма----------------------------------
