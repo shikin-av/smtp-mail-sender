@@ -103,7 +103,8 @@ mailerGoSend = function(to){
 			clearInterval(timeForOneSend);					
 		}else{
 			// Рендер письма----------------------------------
-			currentTemplate.render(locals, function (err, result) {
+		    currentTemplate.render(locals, function (err, result) {
+		        i++;
 				if (err) {
 				    return console.error(err)
 				}
@@ -119,11 +120,11 @@ mailerGoSend = function(to){
 				    }
 				    console.log('------------------------------------------------------------------------');
 				    console.log('Сообщение отправлено на адрес: ' + to + '   ' + info.response);
-
+				    console.log(to[i]);
 
 				});
 			});
-			i++;
+			
 		//-----------------------------------------------
 		} // else one
 
@@ -132,6 +133,7 @@ mailerGoSend = function(to){
 		
 
 }
+
 
 unique = function(arr) {	// удаление повторяющихся emails
   var tempObj = {};
