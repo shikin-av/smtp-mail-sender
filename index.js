@@ -96,14 +96,14 @@ mailerGoSend = function(to){
     var to = to;
 	var i = -1;
 	var timeForOneSend = setInterval(function(){
-	    i++;
+	    
 		if(i == to.length){
 		    clearInterval(timeForOneSend);
 		    mailerStatus = 'Отправка писем завершена';
 		}else{
 			// Рендер письма----------------------------------
 		    currentTemplate.render(locals, function (err, result) {
-		        
+		        i++;
 				if (err) {
 				    return console.error(err)
 				}
