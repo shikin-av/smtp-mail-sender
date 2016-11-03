@@ -15,8 +15,7 @@ var nodemailer = require('nodemailer'),
 	fsUtils = require("nodejs-fs-utils");
 	//	config = require('./config');	 
 	 
-//app.use(express.logger());
-	 
+
 var	config = {
       	host: process.env.HOSTNAME,
       	port: process.env.PORT,
@@ -42,7 +41,6 @@ var csvFiles = [];	// список csv-файлов
 var emails = [];
 /**/
 var timeForOneSend = 1000; // интервал между отправками писем	
-//var timeForTenSend = 20000; 
 
 var mailOptions = {
 	fromForUserWatch: 'От меня',
@@ -53,8 +51,6 @@ var mailOptions = {
     emailTest: 'for.vds@yandex.ru',
     
 };
-/*console.log('fromForUserWatch: ' + mailOptions.fromForUserWatch);
-console.log('from: ' + mailOptions.from());*/
  
 var transporter = nodemailer.createTransport(
   smtpTransport({
@@ -122,16 +118,9 @@ mailerGoSend = function(to){
 				    
 				});
 			});
-			
 		    //-----------------------------------------------
-		    
-		    
-		} // else one
-
-
+		}
 	}, timeForOneSend);
-		
-
 }
 //-----------------------------------------------------------
 mailerGoTest = function (to) {
@@ -156,6 +145,7 @@ mailerGoTest = function (to) {
         });
     });
 }
+//-----------------------------------------------------------
 
 unique = function(arr) {	// удаление повторяющихся emails
   var tempObj = {};
@@ -206,9 +196,7 @@ csvFilesCallback = function(){
 }
 // читаем адреса из csv-файлов
 folderViewer(config.dbFolder, csvFiles, csvFilesCallback);	
-//-----------------------------------------------------------------
 
-//------------------------------------------------------------------
 
 //-----шаблонизатор-------------------------------------------------
 var templating = require('consolidate');
@@ -371,7 +359,6 @@ app.get('/logout', function (req, res) {
 	req.session_state.reset();
   	res.redirect('/login');
 });
-
 
 
 
