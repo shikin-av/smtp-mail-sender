@@ -42,7 +42,7 @@ var csvFiles = [];	// список csv-файлов
 var emails = [];
 /**/
 var timeForOneSend = 1000; // интервал между отправками писем	
-var timeForTenSend = 20000; 
+//var timeForTenSend = 20000; 
 
 var mailOptions = {
 	fromForUserWatch: 'От меня',
@@ -128,7 +128,7 @@ mailerGoSend = function(to){
 		} // else one
 
 
-	}, timeForOneSend);
+	}, timeForOneSend, "11111111", "2222222222222222222222");
 		
 
 }
