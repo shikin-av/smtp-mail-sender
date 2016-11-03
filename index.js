@@ -97,9 +97,8 @@ mailerGoSend = function(to){
 	var iOne = 0;
 	var i = 0;
 	var timeForOneSend = setInterval(function(){
-		iOne++;
-				
-		if(iOne > to.length){
+					
+		if(iOne == to.length){
 			clearInterval(timeForOneSend);					
 		}else{
 			// Рендер письма----------------------------------
@@ -119,8 +118,8 @@ mailerGoSend = function(to){
 				        return console.log(error);
 				    }
 				    console.log('------------------------------------------------------------------------');
-				    console.log('Сообщение отправлено на адрес: ' + to + '   ' + info.response);
-				    console.log(to[i]);
+				    console.log('Сообщение отправлено на адрес: ' + to[i] + '   ' + info.response);
+				    iOne++;
 
 				});
 			});
@@ -129,7 +128,7 @@ mailerGoSend = function(to){
 		} // else one
 
 
-	}, timeForOneSend, "11111111", "2222222222222222222222");
+	}, timeForOneSend, "-", "-");
 		
 
 }
