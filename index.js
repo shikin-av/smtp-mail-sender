@@ -94,16 +94,16 @@ folderViewer = function(folder, currentArr, callback){
 //**************************************************************************************
 mailerGoSend = function(to){
     var to = to;
-	var iOne = 0;
 	var i = 0;
 	var timeForOneSend = setInterval(function(){
 					
-		if(iOne == to.length){
-			clearInterval(timeForOneSend);					
+		if(i == to.length){
+		    clearInterval(timeForOneSend);
+		    mailerStatus = 'Отправка писем завершена';
 		}else{
 			// Рендер письма----------------------------------
 		    currentTemplate.render(locals, function (err, result) {
-		        i++;
+		        
 				if (err) {
 				    return console.error(err)
 				}
@@ -120,16 +120,16 @@ mailerGoSend = function(to){
 				    console.log('------------------------------------------------------------------------');
 				    console.log('Сообщение отправлено на адрес: ' + to[i] + '   ' + info.response);
 				    
-
 				});
 			});
 			
 		    //-----------------------------------------------
-		    iOne++;
+		    i++;
+		    
 		} // else one
 
 
-	}, timeForOneSend, "-", "-");
+	}, timeForOneSend);
 		
 
 }
