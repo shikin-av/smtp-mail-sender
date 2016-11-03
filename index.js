@@ -93,53 +93,44 @@ folderViewer = function(folder, currentArr, callback){
 }
 //**************************************************************************************
 mailerGoSend = function(to){
-	var iTen = 0; 
+    var to = to;
 	var iOne = 0;
 	var i = 0;
-	var timerTenSend = setInterval(function(){	
-		iTen++;		
-		
-		if(iTen == to.length){
-			clearInterval(timerTenSend);	//если кончатся адреса 
-			mailerStatus = 'Отправка писем завершена';
-		}else{
-
-			var timeForOneSend = setInterval(function(){
-				iOne++;
+	var timeForOneSend = setInterval(function(){
+		iOne++;
 				
-				if(iOne == 10){
-					clearInterval(timeForOneSend);
-					iOne = 0;
-				}else{
-					// Рендер письма----------------------------------
-				    currentTemplate.render(locals, function (err, result) {
-				        if (err) {
-				            return console.error(err)
-				        }
-				        transporter.sendMail({
-				            from: mailOptions.from(),
-				            to: to[i],
-				            subject: mailOptions.subject,
-				            html: result.html,
-				            text: result.text
-				        }, function (error, info) {
-				            if (error) {
-				                return console.log(error);
-				            }
-				            console.log('------------------------------------------------------------------------');
-				            console.log('Сообщение отправлено на адрес: ' + to + '   ' + info.response);
+		if(iOne == to.length){
+			clearInterval(timeForOneSend);					
+		}else{
+			// Рендер письма----------------------------------
+			currentTemplate.render(locals, function (err, result) {
+				if (err) {
+				    return console.error(err)
+				}
+				transporter.sendMail({
+				    from: mailOptions.from(),
+				    to: to[i],
+				    subject: mailOptions.subject,
+				    html: result.html,
+				    text: result.text
+				}, function (error, info) {
+				    if (error) {
+				        return console.log(error);
+				    }
+				    console.log('------------------------------------------------------------------------');
+				    console.log('Сообщение отправлено на адрес: ' + to + '   ' + info.response);
 
 
-				        });
-				    });
-					i++;
-				//-----------------------------------------------
-				} // else one
+				});
+			});
+			i++;
+		//-----------------------------------------------
+		} // else one
 
 
-			}, timeForOneSend);
-		} // else ten
-	}, timeForTenSend);
+	}, timeForOneSend);
+		
+
 }
 
 unique = function(arr) {	// удаление повторяющихся emails
