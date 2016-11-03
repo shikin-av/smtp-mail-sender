@@ -109,6 +109,7 @@ mailerGoSend = function(to){
 				
 				if(iOne == 10){
 					clearInterval(timeForOneSend);
+					iOne = 0;
 				}else{
 					// Рендер письма----------------------------------
 				  	currentTemplate.render(locals, function (err, result) {
