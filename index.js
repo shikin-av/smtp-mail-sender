@@ -96,11 +96,11 @@ mailerGoSend = function(to){
 	      return console.error(err)
 	  }
 	  transporter.sendMail({
-      from: mailOptions.from(),
-      to: to,
-      subject: mailOptions.subject,
-      html: result.html,
-      text: result.text
+	      from: mailOptions.from(),
+	      to: to,
+	      subject: mailOptions.subject,
+	      html: result.html,
+	      text: result.text
     }, function(error, info){
       if(error){
           return console.log(error);
@@ -179,6 +179,12 @@ app.get('/', function (req, res) {
 	  console.log('/');
 
 	  folderViewer(config.mailTemplateFolder, templatesMail, emptyFunction);	// смотрим сколько шаблонов
+
+	  //------------------------------
+	  if(mailerStatus == 'Нет email-адресов для рассылки. Загрузите файлы с адресами.' && emails != 0){
+	  	  mailerStatus = 'Готов начать рассылку';
+	  }
+	  //------------------------------
 	  
 	  res.render('views/index', {
 	      host: config.host, 
