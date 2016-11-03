@@ -112,26 +112,27 @@ mailerGoSend = function(to){
 					iOne = 0;
 				}else{
 					// Рендер письма----------------------------------
-				  	currentTemplate.render(locals, function (err, result) {
-							  if (err) {
-							      return console.error(err)
-							  }
-							  transporter.sendMail({
-							      from: mailOptions.from(),
-							      to: to[i],
-							      subject: mailOptions.subject,
-							      html: result.html,
-							      text: result.text
-						    }, function(error, info){
-						      if(error){
-						          return console.log(error);
-						      }
-						      console.log('------------------------------------------------------------------------');
-						      console.log('Сообщение отправлено на адрес: ' + to + '   ' + info.response);
-							
-							i++;
-						});
-					}
+				    currentTemplate.render(locals, function (err, result) {
+				        if (err) {
+				            return console.error(err)
+				        }
+				        transporter.sendMail({
+				            from: mailOptions.from(),
+				            to: to[i],
+				            subject: mailOptions.subject,
+				            html: result.html,
+				            text: result.text
+				        }, function (error, info) {
+				            if (error) {
+				                return console.log(error);
+				            }
+				            console.log('------------------------------------------------------------------------');
+				            console.log('Сообщение отправлено на адрес: ' + to + '   ' + info.response);
+
+
+				        });
+				    });
+					i++;
 				//-----------------------------------------------
 				} // else one
 
