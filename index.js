@@ -40,6 +40,9 @@ var locals = {host: config.host}
 var templatesMail = [];	// список шаблонов
 var csvFiles = [];	// список csv-файлов
 var emails = [];
+/**/
+var timeForOneSend = 1000; // интервал между отправками писем	
+var timeForTenSend = 20000; 
 
 var mailOptions = {
 	fromForUserWatch: 'От меня',
@@ -61,10 +64,10 @@ var transporter = nodemailer.createTransport(
         user: config.smtpUser,
         pass: config.smtpPass
     },
-    connectionTimeout: 10000, 
+    /*connectionTimeout: 10000, 
     pool: true,
     rateLimit: true,
-    maxMessages: 10 
+    maxMessages: 10 */
   })
 );
 
@@ -90,26 +93,51 @@ folderViewer = function(folder, currentArr, callback){
 }
 //**************************************************************************************
 mailerGoSend = function(to){
-	// Рендер письма
-  	currentTemplate.render(locals, function (err, result) {
-	  if (err) {
-	      return console.error(err)
-	  }
-	  transporter.sendMail({
-	      from: mailOptions.from(),
-	      to: to,
-	      subject: mailOptions.subject,
-	      html: result.html,
-	      text: result.text
-    }, function(error, info){
-      if(error){
-          return console.log(error);
-      }
-      console.log('------------------------------------------------------------------------');
-      console.log('Сообщение отправлено на адреса: ' + to + '   ' + info.response);
-      mailerStatus = 'Отправка писем завершена';
-    });
-  });
+	var iTen = 0; 
+	var iOne = 0;
+	var i = 0;
+	var timerTenSend = setInterval(function(){	
+		iTen++;		
+		
+		if(iTen == to.length){
+			clearInterval(timerTenSend);	//если кончатся адреса 
+			mailerStatus = 'Отправка писем завершена';
+		}else{
+
+			var timeForOneSend = setInterval(function(){
+				iOne++;
+				
+				if(iOne == 10){
+					clearInterval(timeForOneSend);
+				}else{
+					// Рендер письма----------------------------------
+				  	currentTemplate.render(locals, function (err, result) {
+							  if (err) {
+							      return console.error(err)
+							  }
+							  transporter.sendMail({
+							      from: mailOptions.from(),
+							      to: to[i],
+							      subject: mailOptions.subject,
+							      html: result.html,
+							      text: result.text
+						    }, function(error, info){
+						      if(error){
+						          return console.log(error);
+						      }
+						      console.log('------------------------------------------------------------------------');
+						      console.log('Сообщение отправлено на адрес: ' + to + '   ' + info.response);
+							
+							i++;
+						});
+					}
+				//-----------------------------------------------
+				} // else one
+
+
+			}, timeForOneSend);
+		} // else ten
+	}, timeForTenSend);
 }
 
 unique = function(arr) {	// удаление повторяющихся emails
