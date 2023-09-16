@@ -1,5 +1,5 @@
 {
-  "name": "mailer",
+  "name": "nodejs-html-mailer",
   "version": "1.0.0",
   "dependencies": {
     "body-parser": "^1.15.2",
@@ -22,11 +22,7 @@
   "scripts": {
     "start": "node server"
   },
-  "engines": {
-    "node": "4.6.x",
-    "npm": "2.15.x"
-  },
   "author": "shikin.a.v@mail.ru",
   "license": "ISC",
-  "description": "html-mailer"
+  "description": "nodejs-html-mailer"
 }

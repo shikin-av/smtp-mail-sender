@@ -65,10 +65,11 @@ getStatus = function(){
 }
 
 mailerGoSend = function(type){
+    let address
     if(type == 'mailerGoTest'){
-        adress = $('#emailTest').val();
+        address = $('#emailTest').val();
     }else{
-        adress = '';
+        address = '';
         $("#btnMailerGoSend").prop('disabled', true); 
     }
     $.ajax({
@@ -76,7 +77,7 @@ mailerGoSend = function(type){
         url: location.protocol + '//' + document.domain + ':' + location.port,
         data: {
             type:type,
-            adress:adress
+            address:address
         },
         dataType: "html",
         success: function (data) {

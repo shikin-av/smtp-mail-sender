@@ -12,5 +12,8 @@
   "smtpPass": "",
 
   "mailTemplateFolder": "/templates/email-templates",
-  "dbFolder": "/db"
+  "dbFolder": "/db",
+  "staticFolder": "/static",
+
+  "emailTest": ""
 }

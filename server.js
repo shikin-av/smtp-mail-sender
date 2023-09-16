@@ -11,24 +11,10 @@ multiparty = require('multiparty'),
 clientSessions = require("client-sessions"),
 fsUtils = require("nodejs-fs-utils"),
 CONFIG = require('./CONFIG.json'),
-mailerGoSend = require('./api/mailerGoSend')
-
-const TYPE = {
-	MAILER_GO_SEND: 'mailerGoSend',
-	MAILER_GO_TEST: 'mailerGoTest',
-	CHANGE_TEMPLATE_AND_SUBJECT: 'changeTemplateAndSubject',
-	GET_STATUS: 'getStatus',
-	SET_FROM: 'setFrom',
-	DELETE_ALL_CSV_FILES: 'deleteAllcsvFiles',
-}
-
-const MAIL_STATUS = {
-	READY_FOR_SEND: 'Готов начать рассылку',
-	SENDING_COMPLETE: 'Отправка писем завершена',
-	NO_EMAILS: 'Нет email-адресов для рассылки. Загрузите файлы с адресами',
-	SENDING: 'Отправка почты',
-	TEST_SENDING: 'Отправка тестового письма',
-}
+mailerGoSend = require('./api/mailerGoSend'),
+mailerGoTest = require('./api/mailerGoTest'),
+folderViewer = require('./api/folderViewer')
+const { TYPE, MAIL_STATUS } = require('./api/constants')
 
 const	app = express()
 app.use(express.static(__dirname + '/static'))
@@ -38,7 +24,6 @@ let locals = {host: CONFIG.host}
 let templatesMail = []	// список шаблонов
 let csvFiles = []	// список csv-файлов
 let emails = []
-/**/
 let timeForOneSend = 1000 // интервал между отправками писем	
 
 let mailOptions = {
@@ -47,7 +32,7 @@ let mailOptions = {
 		return this.fromForUserWatch + ' <'+CONFIG.smtpUser+'>';
 	},
     subject: 'Специально для Вас',	// TODO:
-    emailTest: 'for.vds@yandex.ru',
+    emailTest: CONFIG.emailTest,
 }
  
 let transporter = nodemailer.createTransport(
@@ -67,43 +52,7 @@ let transporter = nodemailer.createTransport(
 
 app.use(clientSessions({ secret: CONFIG.secret }))
 
-// количество файлов/папок в каталоге заносим в массив
-// currentArr - массив шаблонов / csv-файлов
-folderViewer = (folder, csvFiles, callback) => {
-	fs.readdir(folder, function(err, items) {
-		for (let i=0; i<items.length; i++) { 
-			if(csvFiles.length<items.length){
-				csvFiles.push(items[i])
-			}
-		}  
-		callback()
-	})
-}
-//**************************************************************************************
 
-//-----------------------------------------------------------
-mailerGoTest = function (to) {
-    // Рендер письма
-    currentTemplate.render(locals, function (err, result) {
-        if (err) {
-            return console.error(err)
-        }
-        transporter.sendMail({
-            from: mailOptions.from(),
-            to: to,
-            subject: mailOptions.subject,
-            html: result.html,
-            text: result.text
-        }, function (error, info) {
-            if (error) {
-                return console.log(error);
-            }
-            console.log('------------------------------------------------------------------------');
-            console.log('Сообщение отправлено на адреса: ' + to + '   ' + info.response);
-            mailerStatus = MAIL_STATUS.SENDING_COMPLETE;
-        });
-    });
-}
 //-----------------------------------------------------------
 
 unique = function(arr) {	// удаление повторяющихся emails
@@ -210,6 +159,7 @@ app.post('/', urlencodedParser, function (req, res) {
 		  });
 		  templateDir = path.join(__dirname, 'templates', 'email-templates', req.body.selectedTemplate);
 	      currentTemplate = new EmailTemplate(templateDir);
+				console.log('>>> currentTemplate = ', currentTemplate)
 		}
 
 		if(req.body.emailSubject != null){
@@ -221,12 +171,19 @@ app.post('/', urlencodedParser, function (req, res) {
     if(req.body.type == TYPE.MAILER_GO_SEND){
     	if(emails.length > 0){
 	    	mailerStatus = MAIL_STATUS.SENDING
-	    	res.render('views/send', {mailerStatus: mailerStatus});
+	    	res.render('views/send', {mailerStatus: mailerStatus})
 		  	console.log('Рассылка началась ..........................................................')
-	    	mailerGoSend(emails, mailOptions, mailerStatus);
+				console.log('>>> currentTemplate = ', currentTemplate)
+	    	mailerGoSend({ 
+					emails, 
+					mailOptions, 
+					mailerStatus, 
+					transporter,
+					currentTemplate,
+				})
 	    }else{
 	    	mailerStatus = MAIL_STATUS.NO_EMAILS;
-	    	res.render('views/send', {mailerStatus: mailerStatus});
+	    	res.render('views/send', {mailerStatus: mailerStatus})
 	    }
     }
 
@@ -234,8 +191,16 @@ app.post('/', urlencodedParser, function (req, res) {
     	mailerStatus = MAIL_STATUS.TEST_SENDING
     	res.render('views/send', {mailerStatus: mailerStatus})
 	  	console.log('Тестовое письмо ..........................................................')
-	  	mailOptions.emailTest = req.body.adress
-	  	mailerGoTest(req.body.adress)
+			console.log('>>> currentTemplate = ', currentTemplate)
+	  	mailOptions.emailTest = req.body.address
+	  	mailerGoTest({ 
+				to: req.body.address, 
+				locals, 
+				mailOptions, 
+				mailerStatus, 
+				transporter,
+				currentTemplate,
+			})
     }
 
     if(req.body.type == TYPE.GET_STATUS){
