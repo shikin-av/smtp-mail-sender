@@ -1,4 +1,4 @@
-let nodemailer = require('nodemailer'),
+const nodemailer = require('nodemailer'),
 smtpTransport = require('nodemailer-smtp-transport'),
 express = require('express'),
 fs = require('fs'),
@@ -6,18 +6,19 @@ EmailTemplate = require('email-templates').EmailTemplate,
 path = require('path'),
 bodyParser = require('body-parser'),
 urlencodedParser = bodyParser.urlencoded({ extended: false }),
-csv = require('fast-csv'),
 multiparty = require('multiparty'),
 clientSessions = require("client-sessions"),
 fsUtils = require("nodejs-fs-utils"),
 CONFIG = require('./CONFIG.json'),
+CONSTANTS = require('./api/constants'),
 mailerGoSend = require('./api/mailerGoSend'),
 mailerGoTest = require('./api/mailerGoTest'),
-folderViewer = require('./api/folderViewer')
-const { TYPE, MAIL_STATUS } = require('./api/constants')
+folderViewer = require('./api/folderViewer'),
+csvFilesCallback = require('./api/csvFilesCallback')
 
+const { TYPE, MAIL_STATUS } = CONSTANTS
 const	app = express()
-app.use(express.static(__dirname + '/static'))
+app.use(express.static(`${__dirname}${CONFIG.staticFolder}`))
 
 let mailerStatus = MAIL_STATUS.READY_FOR_SEND
 let locals = {host: CONFIG.host}
@@ -53,57 +54,16 @@ let transporter = nodemailer.createTransport(
 app.use(clientSessions({ secret: CONFIG.secret }))
 
 
-//-----------------------------------------------------------
-
-unique = function(arr) {	// удаление повторяющихся emails
-  let tempObj = {};
-
-  for (let i=0; i<arr.length; i++) {
-    let strKey = arr[i];
-    tempObj[strKey] = true; // запомнить строку в виде свойства объекта
-  }
-
-  return Object.keys(tempObj); 	// массив ключей (емэйлов)
-}
-
 
 //**************************************************************************************
-csvFilesCallback = function(){
-	let fileFinished = 0;	// для запуска unique() на последнем файле
 
-	for(let i=0; i<csvFiles.length; i++){
-		//проверка на расширение файла
-		let curFileExtension = csvFiles[i].split('.');	// массив [имя, расширение]
-		curFileExtension = curFileExtension[curFileExtension.length-1];	//расширение
-		if(curFileExtension != 'csv'){
-			console.log('Неверный формат файла ' + csvFiles[i]);
-			csvFiles.splice[i,1];
-			continue;
-		}
-		console.log('CSV файл:    ' + csvFiles[i]);
-
-		fs.createReadStream(__dirname + '/db/' + csvFiles[i])
-			.pipe(csv())
-			.on('data', function(data){
-				emails.push(data);
-
-			})
-			.on('end', function(data){
-				fileFinished++;
-				// выборка уникальных emails после прочтения последнего файла
-				if(fileFinished==csvFiles.length){	
-					emails = unique(emails);
-					//mailOptions.to = emails;	// обновляем список emailov
-
-					console.log('Чтение из ' + csvFiles.length + ' файлов завершено. Всего ' + emails.length + ' адресов');
-					console.log(emails);
-				}
-			
-			});
-	}
-}
 // читаем адреса из csv-файлов
-folderViewer(`${__dirname}${CONFIG.dbFolder}`, csvFiles, csvFilesCallback);	
+folderViewer({
+	folder: `${__dirname}${CONFIG.dbFolder}`,
+	files: csvFiles,
+	emails,
+	callback: csvFilesCallback,
+})	
 
 
 //-----шаблонизатор-------------------------------------------------
@@ -119,7 +79,13 @@ app.get('/', function (req, res) {
 	if (req.session_state.username) {  
 	  console.log('/');
 
-	  folderViewer(`${__dirname}${CONFIG. mailTemplateFolder}`, templatesMail, () => {});	// смотрим сколько шаблонов
+		// смотрим сколько шаблонов
+	  folderViewer({
+			folder: `${__dirname}${CONFIG.mailTemplateFolder}`, 
+			files: templatesMail,
+			emails,
+			callback: () => {},	
+		})
 
 	  //------------------------------
 	  if(mailerStatus == MAIL_STATUS.NO_EMAILS && emails != 0){
@@ -141,25 +107,49 @@ app.get('/', function (req, res) {
 	}
 });
 
+setDefaultTemplate = () => {
+	let templates = []
 
+	folderViewer({
+		folder: `${__dirname}${CONFIG.mailTemplateFolder}`, 
+		files: templates,
+		emails,
+		callback: ({ csvFiles, emails }) => {
+			templates = csvFiles	// TODO: исправить именование csvFiles коллбэка на files
+			console.log('>>> setDefaultTemplate templates ', templates)
+
+			try {
+				const templateDir = path.join(`${__dirname}${CONFIG.mailTemplateFolder}/${templates[0]}`)
+				currentTemplate = new EmailTemplate(templateDir)
+				console.log('>>> setDefaultTemplate currentTemplate ', currentTemplate)
+			} catch (err) {
+				console.error('>>> ERROR setDefaultTemplate ', error)
+			}
+		}
+	})
+}
 
 app.post('/', urlencodedParser, function (req, res) {
     console.log('POST');
 
+		setDefaultTemplate();
+
     if(req.body.type == TYPE.CHANGE_TEMPLATE_AND_SUBJECT){
 	    if(req.body.selectedTemplate != null){
-		  console.log('Выбран шаблон: ' + req.body.selectedTemplate);
-		  // рендерим выбранный в select шаблон
-		  res.render('email-templates/' + req.body.selectedTemplate + '/html', {
-		      host: CONFIG.host, 
-		      port: CONFIG.port,
-		      templatesMail: templatesMail,
-		      subject:mailOptions.subject,
-		      emailTest:mailOptions.emailTest
-		  });
-		  templateDir = path.join(__dirname, 'templates', 'email-templates', req.body.selectedTemplate);
-	      currentTemplate = new EmailTemplate(templateDir);
-				console.log('>>> currentTemplate = ', currentTemplate)
+				console.log('Выбран шаблон: ' + req.body.selectedTemplate);
+				// рендерим выбранный в select шаблон
+				res.render('email-templates/' + req.body.selectedTemplate + '/html', {
+						host: CONFIG.host,
+						port: CONFIG.port,
+						templatesMail: templatesMail,
+						subject:mailOptions.subject,
+						emailTest:mailOptions.emailTest
+				})
+
+				// инициализация currentTemplate
+				templateDir = path.join(__dirname, 'templates', 'email-templates', req.body.selectedTemplate)
+	      currentTemplate = new EmailTemplate(templateDir)
+				console.log('>>> currentTemplate ', currentTemplate)
 		}
 
 		if(req.body.emailSubject != null){
@@ -173,7 +163,7 @@ app.post('/', urlencodedParser, function (req, res) {
 	    	mailerStatus = MAIL_STATUS.SENDING
 	    	res.render('views/send', {mailerStatus: mailerStatus})
 		  	console.log('Рассылка началась ..........................................................')
-				console.log('>>> currentTemplate = ', currentTemplate)
+				console.log('>>> currentTemplate ', currentTemplate)
 	    	mailerGoSend({ 
 					emails, 
 					mailOptions, 
@@ -191,7 +181,7 @@ app.post('/', urlencodedParser, function (req, res) {
     	mailerStatus = MAIL_STATUS.TEST_SENDING
     	res.render('views/send', {mailerStatus: mailerStatus})
 	  	console.log('Тестовое письмо ..........................................................')
-			console.log('>>> currentTemplate = ', currentTemplate)
+			console.log('>>> currentTemplate ', currentTemplate)
 	  	mailOptions.emailTest = req.body.address
 	  	mailerGoTest({ 
 				to: req.body.address, 
@@ -241,8 +231,8 @@ app.post('/emails', urlencodedParser, function (req, res) {
 		// загрузка файлов на сервер
 		let form = new multiparty.Form({
 			uploadDir:  `${__dirname}${CONFIG.dbFolder}`
-		});
-	    form.parse(req, function(err, fields, files) {
+		})
+		form.parse(req, function(err, fields, files) {
 			if (err) {
 				res.writeHead(400, {'content-type': 'text/plain'});	//!!!!!!!!!
 				res.end("invalid request: " + err.message);
@@ -252,12 +242,17 @@ app.post('/emails', urlencodedParser, function (req, res) {
 			for(let i = 0; i<files.upload.length; i++){
 				console.log(files.upload[i].originalFilename);				
 			}
+		
+			csvFiles = [];
 			
-	      	csvFiles = [];
-	    	
-	    	folderViewer(`${__dirname}${CONFIG.dbFolder}`, csvFiles, csvFilesCallback);	// читаем адреса из csv-файлов
-	      	res.render('views/filesUploaded', {host: CONFIG.host});	
-	    });
+			folderViewer({
+				folder: `${__dirname}${CONFIG.dbFolder}`, 
+				files: csvFiles, 
+				emails,
+				callback: csvFilesCallback ,
+			})	// читаем адреса из csv-файлов
+				res.render('views/filesUploaded', {host: CONFIG.host});	
+		});
 	}    
 });
 //**********************************************************
