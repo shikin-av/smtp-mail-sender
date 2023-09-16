@@ -2,8 +2,8 @@
     <head>
         <title>Email Рассылка</title>
         <meta charset="utf-8" />
-        <link href="{{host}}/css/style.css" rel="stylesheet" media="all">
-        <link href="{{host}}/lib/bootstrap.min.css" rel="stylesheet">
+        <link href="/css/style.css" rel="stylesheet" media="all">
+        <link href="/lib/bootstrap.min.css" rel="stylesheet">
 
         <style>
         </style>
@@ -37,7 +37,7 @@
                     </div>       
                     <div class="col-md-6 col-sm-12">
                            <p>Тема письма:</p>
-                           <form method="POST" action="{{host}}:{{port}}">
+                           <form method="POST" action=":{{port}}">
                                 <input type="text" id="emailSubject" value="{{subject}}" class="fullWidthInput">
                                 <input type="submit" value="Применить тему письма" onClick="changeTemplate(); return false;">  
                            </form>
@@ -45,14 +45,14 @@
                     <!-- ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
                     <div class="col-md-6 col-sm-12">
                            
-                           <form method="POST" action="{{host}}:{{port}}">
+                           <form method="POST" action=":{{port}}">
                                 
                                 <input id="btnMailerGoSend" type="submit" value="Начать рассылку" onClick="mailerGoSend('mailerGoSend'); return false;">  
                            </form>
                     </div>
                     <div class="col-md-6 col-sm-12">
                            <p>Адрес Тестовой почты:</p>
-                           <form method="POST" action="{{host}}:{{port}}">
+                           <form method="POST" action=":{{port}}">
                                 <input type="text" id="emailTest" value="{{emailTest}}" class="fullWidthInput">
                                 <input type="submit" value="Отправить письмо на тестовую почту" onClick="mailerGoSend('mailerGoTest'); return false;">  
                            </form>
@@ -64,7 +64,7 @@
                     </div>
                     <div class="col-md-6 col-sm-12">
                            <p>От кого:</p>
-                           <form method="POST" action="{{host}}:{{port}}">
+                           <form method="POST" action=":{{port}}">
                                 <input type="text" id="from" value="{{from}}" class="fullWidthInput">
                                 <input type="submit" value='Применить "От кого"' onClick="setFrom(); return false;">  
                            </form>
@@ -86,9 +86,9 @@
             
         </div>
         <footer>
-            <script src="{{host}}/lib/jquery.min.js"></script>
-            <script src="{{host}}/js/front.js"></script>
-            <script src="{{host}}/lib/bootstrap.min.js"></script>
+            <script src="/lib/jquery.min.js"></script>
+            <script src="/js/front.js"></script>
+            <script src="/lib/bootstrap.min.js"></script>
         </footer>
     </body>
 </html>

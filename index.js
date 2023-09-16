@@ -17,8 +17,8 @@ var nodemailer = require('nodemailer'),
 	 
 
 var	config = {
-      	host: process.env.HOSTNAME,
-      	port: process.env.PORT,
+      	host: process.env.HOSTNAME || 'localhost',
+      	port: process.env.PORT || 80,
   		smtpHost: 'mail.nic.ru',
   		smtpPort: 25,
   		smtpUser: 'mailertest@interstudio.club',
@@ -34,6 +34,7 @@ var	app = express();
 app.use(express.static(__dirname + '/static'));
 
 //------------------------------------------------------------------
+console.log('HOST ', config.host)
 var mailerStatus = 'Готов начать рассылку';
 var locals = {host: config.host}
 var templatesMail = [];	// список шаблонов
@@ -363,7 +364,7 @@ app.get('/logout', function (req, res) {
 
 
 app.listen(config.port, function () {
-  console.log('Server Run');
+  console.log(`Server Run on ${config.host}:${config.port}`);
 });
 
  
