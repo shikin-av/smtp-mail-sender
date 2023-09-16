@@ -12,22 +12,8 @@ var nodemailer = require('nodemailer'),
 	http = require('http'),
 	util = require('util'),
 	clientSessions = require("client-sessions"),
-	fsUtils = require("nodejs-fs-utils");
-	//	config = require('./config');	 
-	 
-
-var	config = {
-      	host: process.env.HOSTNAME || 'localhost',
-      	port: process.env.PORT || 80,
-  		smtpHost: 'mail.nic.ru',
-  		smtpPort: 25,
-  		smtpUser: 'mailertest@interstudio.club',
-  		smtpPass: '79XHA9wQK//LZ',
-      	mailTemplateFolder: __dirname + '/templates/email-templates',
-      	dbFolder: __dirname + '/db',
-      	appUser: 'mailer',
-      	appPass: '123'
-	}
+	fsUtils = require("nodejs-fs-utils"),
+	config = require('./CONFIG.json')
 
 var	app = express();
 
@@ -196,7 +182,7 @@ csvFilesCallback = function(){
 	}
 }
 // читаем адреса из csv-файлов
-folderViewer(config.dbFolder, csvFiles, csvFilesCallback);	
+folderViewer(`${__dirname}${config.dbFolder}`, csvFiles, csvFilesCallback);	
 
 
 //-----шаблонизатор-------------------------------------------------
@@ -212,7 +198,7 @@ app.get('/', function (req, res) {
 	if (req.session_state.username) {  
 	  console.log('/');
 
-	  folderViewer(config.mailTemplateFolder, templatesMail, emptyFunction);	// смотрим сколько шаблонов
+	  folderViewer(`${__dirname}${config. mailTemplateFolder}`, templatesMail, emptyFunction);	// смотрим сколько шаблонов
 
 	  //------------------------------
 	  if(mailerStatus == 'Нет email-адресов для рассылки. Загрузите файлы с адресами.' && emails != 0){
@@ -317,7 +303,7 @@ app.post('/emails', urlencodedParser, function (req, res) {
 	}else{
 		// загрузка файлов на сервер
 		var form = new multiparty.Form({
-			uploadDir:  config.dbFolder
+			uploadDir:  `${__dirname}${config.dbFolder}`
 		});
 	    form.parse(req, function(err, fields, files) {
 			if (err) {
@@ -332,7 +318,7 @@ app.post('/emails', urlencodedParser, function (req, res) {
 			
 	      	csvFiles = [];
 	    	
-	    	folderViewer(config.dbFolder, csvFiles, csvFilesCallback);	// читаем адреса из csv-файлов
+	    	folderViewer(`${__dirname}${config.dbFolder}`, csvFiles, csvFilesCallback);	// читаем адреса из csv-файлов
 	      	res.render('views/filesUploaded', {host: config.host});	
 	    });
 	}    

@@ -1,0 +1,16 @@
+{
+  "host": "localhost",
+  "port": 80,
+
+  "appUser": "",
+  "appPass": "",
+  "secret": "",
+
+  "smtpHost": "mail.nic.ru",
+  "smtpPort": 25,
+  "smtpUser": "",
+  "smtpPass": "",
+
+  "mailTemplateFolder": "/templates/email-templates",
+  "dbFolder": "/db"
+}
