@@ -1,114 +1,86 @@
-var nodemailer = require('nodemailer'),
-	smtpTransport = require('nodemailer-smtp-transport'),
-	express = require('express'),
-	request = require('request'),
-	fs = require('fs'),
-	EmailTemplate = require('email-templates').EmailTemplate,
-	path = require('path'),
-	bodyParser = require('body-parser'),
-	urlencodedParser = bodyParser.urlencoded({ extended: false }),
-	csv = require('fast-csv'),
-	multiparty = require('multiparty'),
-	http = require('http'),
-	util = require('util'),
-	clientSessions = require("client-sessions"),
-	fsUtils = require("nodejs-fs-utils"),
-	config = require('./CONFIG.json')
+let nodemailer = require('nodemailer'),
+smtpTransport = require('nodemailer-smtp-transport'),
+express = require('express'),
+fs = require('fs'),
+EmailTemplate = require('email-templates').EmailTemplate,
+path = require('path'),
+bodyParser = require('body-parser'),
+urlencodedParser = bodyParser.urlencoded({ extended: false }),
+csv = require('fast-csv'),
+multiparty = require('multiparty'),
+clientSessions = require("client-sessions"),
+fsUtils = require("nodejs-fs-utils"),
+CONFIG = require('./CONFIG.json'),
+mailerGoSend = require('./api/mailerGoSend')
 
-var	app = express();
+const TYPE = {
+	MAILER_GO_SEND: 'mailerGoSend',
+	MAILER_GO_TEST: 'mailerGoTest',
+	CHANGE_TEMPLATE_AND_SUBJECT: 'changeTemplateAndSubject',
+	GET_STATUS: 'getStatus',
+	SET_FROM: 'setFrom',
+	DELETE_ALL_CSV_FILES: 'deleteAllcsvFiles',
+}
 
-app.use(express.static(__dirname + '/static'));
+const MAIL_STATUS = {
+	READY_FOR_SEND: 'Готов начать рассылку',
+	SENDING_COMPLETE: 'Отправка писем завершена',
+	NO_EMAILS: 'Нет email-адресов для рассылки. Загрузите файлы с адресами',
+	SENDING: 'Отправка почты',
+	TEST_SENDING: 'Отправка тестового письма',
+}
 
-//------------------------------------------------------------------
-console.log('HOST ', config.host)
-var mailerStatus = 'Готов начать рассылку';
-var locals = {host: config.host}
-var templatesMail = [];	// список шаблонов
-var csvFiles = [];	// список csv-файлов
-var emails = [];
+const	app = express()
+app.use(express.static(__dirname + '/static'))
+
+let mailerStatus = MAIL_STATUS.READY_FOR_SEND
+let locals = {host: CONFIG.host}
+let templatesMail = []	// список шаблонов
+let csvFiles = []	// список csv-файлов
+let emails = []
 /**/
-var timeForOneSend = 1000; // интервал между отправками писем	
+let timeForOneSend = 1000 // интервал между отправками писем	
 
-var mailOptions = {
-	fromForUserWatch: 'От меня',
+let mailOptions = {
+	fromForUserWatch: 'От меня',	// TODO:
 	from: function(){
-		return this.fromForUserWatch + ' <'+config.smtpUser+'>';
+		return this.fromForUserWatch + ' <'+CONFIG.smtpUser+'>';
 	},
-    subject: 'Специально для Вас',
+    subject: 'Специально для Вас',	// TODO:
     emailTest: 'for.vds@yandex.ru',
-    
-};
+}
  
-var transporter = nodemailer.createTransport(
+let transporter = nodemailer.createTransport(
   smtpTransport({
-    host: config.smtpHost,
-    port: config.smtpPort,
+    host: CONFIG.smtpHost,
+    port: CONFIG.smtpPort,
     auth: {
-        user: config.smtpUser,
-        pass: config.smtpPass
+        user: CONFIG.smtpUser,
+        pass: CONFIG.smtpPass
     },
     /*connectionTimeout: 10000, 
     pool: true,
     rateLimit: true,
     maxMessages: 10 */
   })
-);
+)
 
-app.use(clientSessions({
-  secret: '0GBlJZ9EKBt2Zbi2flRPvztczCewBxXK'
-}));
+app.use(clientSessions({ secret: CONFIG.secret }))
 
-// передается в folderViewer(), когда калбэк не нужен
-emptyFunction = function(){
-	return false;
-}
 // количество файлов/папок в каталоге заносим в массив
 // currentArr - массив шаблонов / csv-файлов
-folderViewer = function(folder, currentArr, callback){
+folderViewer = (folder, csvFiles, callback) => {
 	fs.readdir(folder, function(err, items) {
-		for (var i=0; i<items.length; i++) { 
-			if(currentArr.length<items.length){
-				currentArr.push(items[i]);
+		for (let i=0; i<items.length; i++) { 
+			if(csvFiles.length<items.length){
+				csvFiles.push(items[i])
 			}
 		}  
-		callback();  
-	});
+		callback()
+	})
 }
 //**************************************************************************************
-mailerGoSend = function(to){
-    var to = to;
-	var i = -1;
-	var timeForOneSend = setInterval(function(){
-	    
-		if(i == to.length){
-		    clearInterval(timeForOneSend);
-		    mailerStatus = 'Отправка писем завершена';
-		}else{
-			// Рендер письма----------------------------------
-		    currentTemplate.render(locals, function (err, result) {
-		        i++;
-				if (err) {
-				    return console.error(err)
-				}
-				transporter.sendMail({
-				    from: mailOptions.from(),
-				    to: to[i],
-				    subject: mailOptions.subject,
-				    html: result.html,
-				    text: result.text
-				}, function (error, info) {
-				    if (error) {
-				        return console.log(error);
-				    }
-				    console.log('------------------------------------------------------------------------');
-				    console.log('Сообщение отправлено на адрес: ' + to[i] + '   ' + info.response);
-				    
-				});
-			});
-		    //-----------------------------------------------
-		}
-	}, timeForOneSend);
-}
+
 //-----------------------------------------------------------
 mailerGoTest = function (to) {
     // Рендер письма
@@ -128,17 +100,17 @@ mailerGoTest = function (to) {
             }
             console.log('------------------------------------------------------------------------');
             console.log('Сообщение отправлено на адреса: ' + to + '   ' + info.response);
-            mailerStatus = 'Отправка писем завершена';
+            mailerStatus = MAIL_STATUS.SENDING_COMPLETE;
         });
     });
 }
 //-----------------------------------------------------------
 
 unique = function(arr) {	// удаление повторяющихся emails
-  var tempObj = {};
+  let tempObj = {};
 
-  for (var i=0; i<arr.length; i++) {
-    var strKey = arr[i];
+  for (let i=0; i<arr.length; i++) {
+    let strKey = arr[i];
     tempObj[strKey] = true; // запомнить строку в виде свойства объекта
   }
 
@@ -148,11 +120,11 @@ unique = function(arr) {	// удаление повторяющихся emails
 
 //**************************************************************************************
 csvFilesCallback = function(){
-	var fileFinished = 0;	// для запуска unique() на последнем файле
+	let fileFinished = 0;	// для запуска unique() на последнем файле
 
-	for(var i=0; i<csvFiles.length; i++){
+	for(let i=0; i<csvFiles.length; i++){
 		//проверка на расширение файла
-		var curFileExtension = csvFiles[i].split('.');	// массив [имя, расширение]
+		let curFileExtension = csvFiles[i].split('.');	// массив [имя, расширение]
 		curFileExtension = curFileExtension[curFileExtension.length-1];	//расширение
 		if(curFileExtension != 'csv'){
 			console.log('Неверный формат файла ' + csvFiles[i]);
@@ -182,11 +154,11 @@ csvFilesCallback = function(){
 	}
 }
 // читаем адреса из csv-файлов
-folderViewer(`${__dirname}${config.dbFolder}`, csvFiles, csvFilesCallback);	
+folderViewer(`${__dirname}${CONFIG.dbFolder}`, csvFiles, csvFilesCallback);	
 
 
 //-----шаблонизатор-------------------------------------------------
-var templating = require('consolidate');
+let templating = require('consolidate');
 app.engine('hbs', templating.handlebars);
 app.set('view engine', 'hbs');    
 app.set('views', __dirname + '/templates');
@@ -198,17 +170,17 @@ app.get('/', function (req, res) {
 	if (req.session_state.username) {  
 	  console.log('/');
 
-	  folderViewer(`${__dirname}${config. mailTemplateFolder}`, templatesMail, emptyFunction);	// смотрим сколько шаблонов
+	  folderViewer(`${__dirname}${CONFIG. mailTemplateFolder}`, templatesMail, () => {});	// смотрим сколько шаблонов
 
 	  //------------------------------
-	  if(mailerStatus == 'Нет email-адресов для рассылки. Загрузите файлы с адресами.' && emails != 0){
-	  	  mailerStatus = 'Готов начать рассылку';
+	  if(mailerStatus == MAIL_STATUS.NO_EMAILS && emails != 0){
+	  	  mailerStatus = MAIL_STATUS.READY_FOR_SEND;
 	  }
 	  //------------------------------
 	  
 	  res.render('views/index', {
-	      host: config.host, 
-	      port: config.port,
+	      host: CONFIG.host, 
+	      port: CONFIG.port,
 	      templatesMail: templatesMail,
 	      subject: mailOptions.subject,
 	      emailTest: mailOptions.emailTest,
@@ -225,13 +197,13 @@ app.get('/', function (req, res) {
 app.post('/', urlencodedParser, function (req, res) {
     console.log('POST');
 
-    if(req.body.type == 'changeTemplateAndSubject'){
+    if(req.body.type == TYPE.CHANGE_TEMPLATE_AND_SUBJECT){
 	    if(req.body.selectedTemplate != null){
 		  console.log('Выбран шаблон: ' + req.body.selectedTemplate);
 		  // рендерим выбранный в select шаблон
 		  res.render('email-templates/' + req.body.selectedTemplate + '/html', {
-		      host: config.host, 
-		      port: config.port,
+		      host: CONFIG.host, 
+		      port: CONFIG.port,
 		      templatesMail: templatesMail,
 		      subject:mailOptions.subject,
 		      emailTest:mailOptions.emailTest
@@ -246,32 +218,32 @@ app.post('/', urlencodedParser, function (req, res) {
 	   	}	
     }
 
-    if(req.body.type == 'mailerGoSend'){
+    if(req.body.type == TYPE.MAILER_GO_SEND){
     	if(emails.length > 0){
-	    	mailerStatus = 'Отправка почты';
+	    	mailerStatus = MAIL_STATUS.SENDING
 	    	res.render('views/send', {mailerStatus: mailerStatus});
-		  	console.log('Рассылка началась ..........................................................');
-	    	mailerGoSend(emails);
+		  	console.log('Рассылка началась ..........................................................')
+	    	mailerGoSend(emails, mailOptions, mailerStatus);
 	    }else{
-	    	mailerStatus = 'Нет email-адресов для рассылки. Загрузите файлы с адресами.';
+	    	mailerStatus = MAIL_STATUS.NO_EMAILS;
 	    	res.render('views/send', {mailerStatus: mailerStatus});
 	    }
     }
 
-    if(req.body.type == 'mailerGoTest'){
-    	mailerStatus = 'Отправка тестового письма';
-    	res.render('views/send', {mailerStatus: mailerStatus});
-	  	console.log('Тестовое письмо ..........................................................');
-	  	mailOptions.emailTest = req.body.adress; 
-	  	mailerGoTest(req.body.adress);
+    if(req.body.type == TYPE.MAILER_GO_TEST){
+    	mailerStatus = MAIL_STATUS.TEST_SENDING
+    	res.render('views/send', {mailerStatus: mailerStatus})
+	  	console.log('Тестовое письмо ..........................................................')
+	  	mailOptions.emailTest = req.body.adress
+	  	mailerGoTest(req.body.adress)
     }
 
-    if(req.body.type == 'getStatus'){
+    if(req.body.type == TYPE.GET_STATUS){
     	res.render('views/send', {mailerStatus: mailerStatus});
     	console.log('Проверка статуса');
     }
 
-    if(req.body.type == 'setFrom'){
+    if(req.body.type == TYPE.SET_FROM){
     	//mailOptions.from = req.body.from + ' <'+config.smtpUser+'>';	// "input От кого"
     	mailOptions.fromForUserWatch = req.body.from;	// "input От кого"
     	console.log('От: ' + req.body.from);
@@ -281,7 +253,7 @@ app.post('/', urlencodedParser, function (req, res) {
 //**********************************************************
 app.get('/emails', function (req, res) {
 	if (req.session_state.username) {  
-		res.render('views/emails', {host: config.host, emails_length: emails.length});
+		res.render('views/emails', {host: CONFIG.host, emails_length: emails.length});
 		console.log('/emails');
 	}else{
 		res.redirect('/login');
@@ -290,20 +262,20 @@ app.get('/emails', function (req, res) {
 //**********************************************************
 app.post('/emails', urlencodedParser, function (req, res) {
 
-	if(req.body.type == 'deleteAllcsvFiles'){
+	if(req.body.type == TYPE.DELETE_ALL_CSV_FILES){
 		fsUtils.emptyDir(__dirname + '/db', function (err) {
 			if(err){
 				return console.error(err);
 			}else{
-				res.render('views/filesDeleted', {host: config.host});	
+				res.render('views/filesDeleted', {host: CONFIG.host});	
 				emails = [];
 		}
 	});
 
 	}else{
 		// загрузка файлов на сервер
-		var form = new multiparty.Form({
-			uploadDir:  `${__dirname}${config.dbFolder}`
+		let form = new multiparty.Form({
+			uploadDir:  `${__dirname}${CONFIG.dbFolder}`
 		});
 	    form.parse(req, function(err, fields, files) {
 			if (err) {
@@ -312,27 +284,27 @@ app.post('/emails', urlencodedParser, function (req, res) {
 				return;
 			}
 			console.log('Загруженные файлы: ');	
-			for(var i = 0; i<files.upload.length; i++){
+			for(let i = 0; i<files.upload.length; i++){
 				console.log(files.upload[i].originalFilename);				
 			}
 			
 	      	csvFiles = [];
 	    	
-	    	folderViewer(`${__dirname}${config.dbFolder}`, csvFiles, csvFilesCallback);	// читаем адреса из csv-файлов
-	      	res.render('views/filesUploaded', {host: config.host});	
+	    	folderViewer(`${__dirname}${CONFIG.dbFolder}`, csvFiles, csvFilesCallback);	// читаем адреса из csv-файлов
+	      	res.render('views/filesUploaded', {host: CONFIG.host});	
 	    });
 	}    
 });
 //**********************************************************
 app.get('/login', function (req, res) {
-	res.render('views/login', {host: config.host, port:config.port});
+	res.render('views/login', {host: CONFIG.host, port:CONFIG.port});
 	console.log('/login');
 });
 app.post('/login', urlencodedParser, function (req, res) {
-	var login = req.body.login;
-	var pass = req.body.pass;
+	let login = req.body.login;
+	let pass = req.body.pass;
 
-	if(login == config.appUser && pass == config.appPass){
+	if(login == CONFIG.appUser && pass == CONFIG.appPass){
 		req.session_state.username = login;
 		console.log('Login: ' + req.session_state.username);
 		//res.redirect('/');
@@ -349,8 +321,8 @@ app.get('/logout', function (req, res) {
 
 
 
-app.listen(config.port, function () {
-  console.log(`Server Run on ${config.host}:${config.port}`);
+app.listen(CONFIG.port, function () {
+  console.log(`SERVER RUN ON ${CONFIG.host}:${CONFIG.port}`);
 });
 
  
