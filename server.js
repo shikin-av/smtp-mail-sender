@@ -14,7 +14,8 @@ CONSTANTS = require('./api/constants'),
 mailerGoSend = require('./api/mailerGoSend'),
 mailerGoTest = require('./api/mailerGoTest'),
 folderViewer = require('./api/folderViewer'),
-csvFilesCallback = require('./api/csvFilesCallback')
+csvFilesCallback = require('./api/csvFilesCallback'),
+setDefaultTemplate = require('./api/setDefaultTemplate')
 
 const { TYPE, MAIL_STATUS } = CONSTANTS
 const	app = express()
@@ -22,7 +23,8 @@ app.use(express.static(`${__dirname}${CONFIG.staticFolder}`))
 
 let mailerStatus = MAIL_STATUS.READY_FOR_SEND
 let locals = {host: CONFIG.host}
-let templatesMail = []	// список шаблонов
+let currentTemplate
+let mailTemplates = []	// список шаблонов
 let csvFiles = []	// список csv-файлов
 let emails = []
 let timeForOneSend = 1000 // интервал между отправками писем	
@@ -53,10 +55,6 @@ let transporter = nodemailer.createTransport(
 
 app.use(clientSessions({ secret: CONFIG.secret }))
 
-
-
-//**************************************************************************************
-
 // читаем адреса из csv-файлов
 folderViewer({
 	folder: `${__dirname}${CONFIG.dbFolder}`,
@@ -66,15 +64,12 @@ folderViewer({
 })	
 
 
-//-----шаблонизатор-------------------------------------------------
+// Шаблонизатор
 let templating = require('consolidate');
 app.engine('hbs', templating.handlebars);
 app.set('view engine', 'hbs');    
 app.set('views', __dirname + '/templates');
 
-
-
-//-------------------------------------------------------------------------------------------------
 app.get('/', function (req, res) {
 	if (req.session_state.username) {  
 	  console.log('/');
@@ -82,7 +77,7 @@ app.get('/', function (req, res) {
 		// смотрим сколько шаблонов
 	  folderViewer({
 			folder: `${__dirname}${CONFIG.mailTemplateFolder}`, 
-			files: templatesMail,
+			files: mailTemplates,
 			emails,
 			callback: () => {},	
 		})
@@ -96,7 +91,7 @@ app.get('/', function (req, res) {
 	  res.render('views/index', {
 	      host: CONFIG.host, 
 	      port: CONFIG.port,
-	      templatesMail: templatesMail,
+	      mailTemplates,
 	      subject: mailOptions.subject,
 	      emailTest: mailOptions.emailTest,
 	      mailerStatus: mailerStatus,
@@ -107,102 +102,92 @@ app.get('/', function (req, res) {
 	}
 });
 
-setDefaultTemplate = () => {
-	let templates = []
-
-	folderViewer({
-		folder: `${__dirname}${CONFIG.mailTemplateFolder}`, 
-		files: templates,
-		emails,
-		callback: ({ csvFiles, emails }) => {
-			templates = csvFiles	// TODO: исправить именование csvFiles коллбэка на files
-			console.log('>>> setDefaultTemplate templates ', templates)
-
-			try {
-				const templateDir = path.join(`${__dirname}${CONFIG.mailTemplateFolder}/${templates[0]}`)
-				currentTemplate = new EmailTemplate(templateDir)
-				console.log('>>> setDefaultTemplate currentTemplate ', currentTemplate)
-			} catch (err) {
-				console.error('>>> ERROR setDefaultTemplate ', error)
-			}
-		}
-	})
-}
-
 app.post('/', urlencodedParser, function (req, res) {
-    console.log('POST');
+	console.log('POST');
 
-		setDefaultTemplate();
+	let templateName = req.body.selectedTemplate
+		? req.body.selectedTemplate
+		: 'hello'
+	console.log('templateName = ', templateName)
+	console.log(`>>> TYPE: ${req.body.type}`)
 
-    if(req.body.type == TYPE.CHANGE_TEMPLATE_AND_SUBJECT){
-	    if(req.body.selectedTemplate != null){
-				console.log('Выбран шаблон: ' + req.body.selectedTemplate);
-				// рендерим выбранный в select шаблон
-				res.render('email-templates/' + req.body.selectedTemplate + '/html', {
-						host: CONFIG.host,
-						port: CONFIG.port,
-						templatesMail: templatesMail,
-						subject:mailOptions.subject,
-						emailTest:mailOptions.emailTest
-				})
+	if(req.body.type == TYPE.CHANGE_TEMPLATE_AND_SUBJECT){
+		// if(templateName != null){
+			console.log('Выбран шаблон: ' + templateName);
+			// рендерим выбранный в select шаблон
+			res.render('email-templates/' + templateName + '/html', {
+					host: CONFIG.host,
+					port: CONFIG.port,
+					templatesMail: mailTemplates,
+					subject:mailOptions.subject,
+					emailTest:mailOptions.emailTest
+			})
 
-				// инициализация currentTemplate
-				templateDir = path.join(__dirname, 'templates', 'email-templates', req.body.selectedTemplate)
-	      currentTemplate = new EmailTemplate(templateDir)
-				console.log('>>> currentTemplate ', currentTemplate)
+			// инициализация currentTemplate
+			templateDir = path.join(__dirname, 'templates', 'email-templates', templateName)
+			currentTemplate = new EmailTemplate(templateDir)
+		// }
+
+		if(!!req.body.emailSubject){
+			mailOptions.subject = req.body.emailSubject;
+			console.log('Тема письма: ' + req.body.emailSubject);
+		} else {
+			console.log('>>> ERROR ТЕМА ПИСЬМА ', req.body.emailSubject)
+		}
+	}
+	
+
+	if(req.body.type == TYPE.MAILER_GO_SEND){
+		if (!currentTemplate) {
+			currentTemplate = setDefaultTemplate(mailTemplates)
 		}
 
-		if(req.body.emailSubject != null){
-	   		mailOptions.subject = req.body.emailSubject;
-	   		console.log('Тема письма: ' + req.body.emailSubject);
-	   	}	
-    }
-
-    if(req.body.type == TYPE.MAILER_GO_SEND){
-    	if(emails.length > 0){
-	    	mailerStatus = MAIL_STATUS.SENDING
-	    	res.render('views/send', {mailerStatus: mailerStatus})
-		  	console.log('Рассылка началась ..........................................................')
-				console.log('>>> currentTemplate ', currentTemplate)
-	    	mailerGoSend({ 
-					emails, 
-					mailOptions, 
-					mailerStatus, 
-					transporter,
-					currentTemplate,
-				})
-	    }else{
-	    	mailerStatus = MAIL_STATUS.NO_EMAILS;
-	    	res.render('views/send', {mailerStatus: mailerStatus})
-	    }
-    }
-
-    if(req.body.type == TYPE.MAILER_GO_TEST){
-    	mailerStatus = MAIL_STATUS.TEST_SENDING
-    	res.render('views/send', {mailerStatus: mailerStatus})
-	  	console.log('Тестовое письмо ..........................................................')
-			console.log('>>> currentTemplate ', currentTemplate)
-	  	mailOptions.emailTest = req.body.address
-	  	mailerGoTest({ 
-				to: req.body.address, 
-				locals, 
+		if(emails.length > 0){
+			mailerStatus = MAIL_STATUS.SENDING
+			res.render('views/send', {mailerStatus: mailerStatus})
+			console.log('Рассылка началась ..........................................................')
+			mailerGoSend({ 
+				emails, 
 				mailOptions, 
 				mailerStatus, 
 				transporter,
 				currentTemplate,
 			})
-    }
+		}else{
+			mailerStatus = MAIL_STATUS.NO_EMAILS;
+			res.render('views/send', {mailerStatus: mailerStatus})
+		}
+	}
 
-    if(req.body.type == TYPE.GET_STATUS){
-    	res.render('views/send', {mailerStatus: mailerStatus});
-    	console.log('Проверка статуса');
-    }
+	if(req.body.type == TYPE.MAILER_GO_TEST){
+		if (!currentTemplate) {
+			currentTemplate = setDefaultTemplate(mailTemplates)
+		}
 
-    if(req.body.type == TYPE.SET_FROM){
-    	//mailOptions.from = req.body.from + ' <'+config.smtpUser+'>';	// "input От кого"
-    	mailOptions.fromForUserWatch = req.body.from;	// "input От кого"
-    	console.log('От: ' + req.body.from);
-    }
+		mailerStatus = MAIL_STATUS.TEST_SENDING
+		res.render('views/send', {mailerStatus: mailerStatus})
+		console.log('Тестовое письмо ..........................................................')
+		mailOptions.emailTest = req.body.address
+		mailerGoTest({ 
+			to: req.body.address, 
+			locals, 
+			mailOptions, 
+			mailerStatus, 
+			transporter,
+			currentTemplate,
+		})
+	}
+
+	if(req.body.type == TYPE.GET_STATUS){
+		res.render('views/send', {mailerStatus: mailerStatus});
+		console.log('Проверка статуса');
+	}
+
+	if(req.body.type == TYPE.SET_FROM){
+		//mailOptions.from = req.body.from + ' <'+config.smtpUser+'>';	// "input От кого"
+		mailOptions.fromForUserWatch = req.body.from;	// "input От кого"
+		console.log('От: ' + req.body.from);
+	}
 });
 
 //**********************************************************

@@ -2,7 +2,7 @@ const unique = require('./unique')
 const fs = require('fs')
 const csv = require('fast-csv')
 const CONFIG = require('../CONFIG.json')
-console.log('>>>>>>>> TYPEOF UNIQUE ', typeof unique)
+
 // используется в folderViewer
 const csvFilesCallback = ({ csvFiles, emails }) => {
 	let fileFinished = 0;	// для запуска unique() на последнем файле

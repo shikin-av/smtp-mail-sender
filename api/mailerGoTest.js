@@ -9,7 +9,8 @@ const mailerGoTest = ({
   currentTemplate, 
 }) => {
   // Рендер письма
-  currentTemplate.render(locals, (err, result) => {
+  try {
+    currentTemplate.render(locals, (err, result) => {
       if (err) {
           return console.error(err)
       }
@@ -24,10 +25,13 @@ const mailerGoTest = ({
               return console.log(error)
           }
           console.log('------------------------------------------------------------------------');
-          console.log(`Сообщение отправлено на адреса:  ${to}  ${info.response}`);
+          console.log(`Сообщение отправлено на адреса:  ${to}  ${info.response}`)
           mailerStatus = MAIL_STATUS.SENDING_COMPLETE;
-      });
-  });
+      })
+    })
+  } catch (err) {
+    console.error('>>> ERROR mailerGoTest ', err)
+  }
 }
 
 module.exports = mailerGoTest

@@ -1,4 +1,5 @@
 module.exports = {
+  DEFAULT_MAIL_SUBJECT: 'Специально для Вас', // TODO: from CONFIG
   TYPE: {
     MAILER_GO_SEND: 'mailerGoSend',
     MAILER_GO_TEST: 'mailerGoTest',
