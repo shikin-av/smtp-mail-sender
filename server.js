@@ -27,7 +27,8 @@ let currentTemplate
 let mailTemplates = []	// список шаблонов
 let csvFiles = []	// список csv-файлов
 let emails = []
-let timeForOneSend = 1000 // интервал между отправками писем	
+let timeForOneSend = 1000 // интервал между отправками писем
+let successfullySent = 0	 // успешно отправленных писем (текущая рассылка)
 
 let mailOptions = {
 	fromForUserWatch: 'От меня',	// TODO:
@@ -94,7 +95,7 @@ app.get('/', function (req, res) {
 	      mailTemplates,
 	      subject: mailOptions.subject,
 	      emailTest: mailOptions.emailTest,
-	      mailerStatus: mailerStatus,
+	      mailerStatus,
 	      from: mailOptions.fromForUserWatch
 	  });
 	}else{
@@ -103,36 +104,36 @@ app.get('/', function (req, res) {
 });
 
 app.post('/', urlencodedParser, function (req, res) {
-	console.log('POST');
+	// console.log('POST');
 
 	let templateName = req.body.selectedTemplate
 		? req.body.selectedTemplate
 		: 'hello'
-	console.log('templateName = ', templateName)
+	// console.log('templateName = ', templateName)
 	console.log(`>>> TYPE: ${req.body.type}`)
+	console.log(`>>> STATUS: ${mailerStatus}`)
 
 	if(req.body.type == TYPE.CHANGE_TEMPLATE_AND_SUBJECT){
-		// if(templateName != null){
-			console.log('Выбран шаблон: ' + templateName);
-			// рендерим выбранный в select шаблон
-			res.render('email-templates/' + templateName + '/html', {
-					host: CONFIG.host,
-					port: CONFIG.port,
-					templatesMail: mailTemplates,
-					subject:mailOptions.subject,
-					emailTest:mailOptions.emailTest
-			})
+		console.log('Выбран шаблон: ' + templateName);
+		// рендерим выбранный в select шаблон
+		res.render('email-templates/' + templateName + '/html', {
+				host: CONFIG.host,
+				port: CONFIG.port,
+				templatesMail: mailTemplates,
+				subject:mailOptions.subject,
+				emailTest:mailOptions.emailTest
+		})
 
-			// инициализация currentTemplate
-			templateDir = path.join(__dirname, 'templates', 'email-templates', templateName)
-			currentTemplate = new EmailTemplate(templateDir)
-		// }
+		// инициализация currentTemplate
+		templateDir = path.join(__dirname, 'templates', 'email-templates', templateName)
+		currentTemplate = new EmailTemplate(templateDir)
+
 
 		if(!!req.body.emailSubject){
 			mailOptions.subject = req.body.emailSubject;
 			console.log('Тема письма: ' + req.body.emailSubject);
 		} else {
-			console.log('>>> ERROR ТЕМА ПИСЬМА ', req.body.emailSubject)
+			console.log('>>> ERROR Тема письма ', req.body.emailSubject)
 		}
 	}
 	
@@ -144,18 +145,27 @@ app.post('/', urlencodedParser, function (req, res) {
 
 		if(emails.length > 0){
 			mailerStatus = MAIL_STATUS.SENDING
-			res.render('views/send', {mailerStatus: mailerStatus})
+			res.render('views/send', {mailerStatus})
 			console.log('Рассылка началась ..........................................................')
 			mailerGoSend({ 
-				emails, 
+				emails,
+				locals,
 				mailOptions, 
-				mailerStatus, 
 				transporter,
 				currentTemplate,
+				successCallback: (resultStatus) => {
+					successfullySent += 1
+					console.log(`Письма УСПЕШНО оправлены на ${successfullySent}/${emails.length} адресов`);
+					mailerStatus = resultStatus
+				},
+				errorCallback: (resultStatus, err) => {
+					console.error(`Что-то пошло не так (${resultStatus})`, err);
+					mailerStatus = resultStatus
+				}
 			})
 		}else{
 			mailerStatus = MAIL_STATUS.NO_EMAILS;
-			res.render('views/send', {mailerStatus: mailerStatus})
+			res.render('views/send', {mailerStatus})
 		}
 	}
 
@@ -165,22 +175,29 @@ app.post('/', urlencodedParser, function (req, res) {
 		}
 
 		mailerStatus = MAIL_STATUS.TEST_SENDING
-		res.render('views/send', {mailerStatus: mailerStatus})
+		res.render('views/send', {mailerStatus})
 		console.log('Тестовое письмо ..........................................................')
 		mailOptions.emailTest = req.body.address
 		mailerGoTest({ 
-			to: req.body.address, 
+			email: req.body.address, 
 			locals, 
-			mailOptions, 
-			mailerStatus, 
+			mailOptions,
 			transporter,
 			currentTemplate,
+			successCallback: (resultStatus) => {
+				console.log(`Тестовоее письмо УСПЕШНО оправлено (${resultStatus})`);
+				mailerStatus = resultStatus
+			},
+			errorCallback: (resultStatus, err) => {
+				console.error(`Что-то пошло не так (${resultStatus})`, err);
+				mailerStatus = resultStatus
+			}
 		})
 	}
 
 	if(req.body.type == TYPE.GET_STATUS){
-		res.render('views/send', {mailerStatus: mailerStatus});
-		console.log('Проверка статуса');
+		res.render('views/send', {mailerStatus});
+		// console.log('####### Проверка статуса', mailerStatus);
 	}
 
 	if(req.body.type == TYPE.SET_FROM){

@@ -1,43 +1,45 @@
 const { MAIL_STATUS } = require('./constants')
 
 const mailerGoSend = ({ 
-	to, 
+	emails,
+	locals,
 	mailOptions, 
-	mailerStatus, 
 	transporter, 
-	currentTemplate 
+	currentTemplate,
+	successCallback,
+  errorCallback,
 }) => {
+	console.log('@@@@@@ EMAILS ', emails)
 	var i = -1
 	var timeForOneSend = setInterval(() => {
-		if(i == to.length){
+		if(i == emails.length){
 		    clearInterval(timeForOneSend);
 		    mailerStatus = MAIL_STATUS.SENDING_COMPLETE
 		}else{
 			// Рендер письма
-			try {
 				currentTemplate.render(locals, (err, result) => {
 					i++;
 					if (err) {
+						errorCallback(MAIL_STATUS.ERROR_TEMPLATE, err)
 							return console.error(err)
 					}
 					transporter.sendMail({
 							from: mailOptions.from(),
-							to: to[i],
+							to: emails[i],
 							subject: mailOptions.subject,
 							html: result.html,
 							text: result.text
-						}, (error, info) => {
-								if (error) {
-										return console.error('>>> ERROR mailerGoSend transporter.sendMail ', err)
+						}, (err, info) => {
+								if (err) {
+									errorCallback(MAIL_STATUS.ERROR_SENDING, err)
+									return console.error('>>> ERROR mailerGoSend ошибка отправки ', err)
 								}
 								console.log('------------------------------------------------------------------------');
-								console.log('Сообщение отправлено на адрес: ' + to[i] + '   ' + info.response);
+								console.log('Сообщение отправлено на адрес: ' + emails[i] + '   ' + info.response);
+								successCallback(MAIL_STATUS.SENDING_COMPLETE);
 						}
 					);
 				})
-			} catch (err) {
-				console.error('>>> ERROR mailerGoSend render template ', err)
-			}
 		}
 	}, timeForOneSend);
 }
