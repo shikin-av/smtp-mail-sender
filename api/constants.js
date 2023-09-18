@@ -15,6 +15,5 @@ module.exports = {
     SENDING: 'Отправка почты',
     TEST_SENDING: 'Отправка тестового письма',
     ERROR_SENDING: 'Ошибка отправки',
-    ERROR_TEMPLATE: 'Ошибка связанная с шаблоном',
   }
 }

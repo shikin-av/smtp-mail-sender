@@ -103,13 +103,11 @@ app.get('/', function (req, res) {
 	}
 });
 
-app.post('/', urlencodedParser, function (req, res) {
-	// console.log('POST');
-
+app.post('/', urlencodedParser, async (req, res) => {
 	let templateName = req.body.selectedTemplate
 		? req.body.selectedTemplate
 		: 'hello'
-	// console.log('templateName = ', templateName)
+
 	console.log(`>>> TYPE: ${req.body.type}`)
 	console.log(`>>> STATUS: ${mailerStatus}`)
 
@@ -147,22 +145,20 @@ app.post('/', urlencodedParser, function (req, res) {
 			mailerStatus = MAIL_STATUS.SENDING
 			res.render('views/send', {mailerStatus})
 			console.log('Рассылка началась ..........................................................')
-			mailerGoSend({ 
-				emails,
-				locals,
-				mailOptions, 
-				transporter,
-				currentTemplate,
-				successCallback: (resultStatus) => {
-					successfullySent += 1
-					console.log(`Письма УСПЕШНО оправлены на ${successfullySent}/${emails.length} адресов`);
-					mailerStatus = resultStatus
-				},
-				errorCallback: (resultStatus, err) => {
-					console.error(`Что-то пошло не так (${resultStatus})`, err);
-					mailerStatus = resultStatus
-				}
-			})
+			
+			try {
+				await mailerGoSend({ 
+					emails,
+					locals,
+					mailOptions, 
+					transporter,
+					currentTemplate,
+				})
+				mailerStatus = MAIL_STATUS.SENDING_COMPLETE
+			} catch(err) {
+				mailerStatus = MAIL_STATUS.ERROR_SENDING
+				console.error(`>>> ERROR Ошибка отправки`, err);			
+			}
 		}else{
 			mailerStatus = MAIL_STATUS.NO_EMAILS;
 			res.render('views/send', {mailerStatus})
@@ -178,21 +174,22 @@ app.post('/', urlencodedParser, function (req, res) {
 		res.render('views/send', {mailerStatus})
 		console.log('Тестовое письмо ..........................................................')
 		mailOptions.emailTest = req.body.address
-		mailerGoTest({ 
-			email: req.body.address, 
-			locals, 
-			mailOptions,
-			transporter,
-			currentTemplate,
-			successCallback: (resultStatus) => {
-				console.log(`Тестовоее письмо УСПЕШНО оправлено (${resultStatus})`);
-				mailerStatus = resultStatus
-			},
-			errorCallback: (resultStatus, err) => {
-				console.error(`Что-то пошло не так (${resultStatus})`, err);
-				mailerStatus = resultStatus
-			}
-		})
+		
+		try {
+			await mailerGoTest({ 
+				email: req.body.address, 
+				locals, 
+				mailOptions,
+				transporter,
+				currentTemplate,
+			})	
+
+			mailerStatus = MAIL_STATUS.SENDING_COMPLETE
+			console.log(`Тестовоее письмо УСПЕШНО оправлено на ${req.body.address}`);
+		} catch(err) {
+			mailerStatus = MAIL_STATUS.ERROR_SENDING
+			console.error(`>>> ERROR Не удалось отправить письмо на тестовый ящик ${req.body.address}`, err);			
+		}
 	}
 
 	if(req.body.type == TYPE.GET_STATUS){

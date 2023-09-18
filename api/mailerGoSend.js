@@ -1,47 +1,37 @@
-const { MAIL_STATUS } = require('./constants')
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
 const mailerGoSend = ({ 
-	emails,
+	emails,	// [[any@mail.ru, 'some@mail.ru'], [...]]	// внутрненний массив - строка csv файла
 	locals,
 	mailOptions, 
 	transporter, 
 	currentTemplate,
-	successCallback,
-  errorCallback,
 }) => {
-	console.log('@@@@@@ EMAILS ', emails)
-	var i = -1
-	var timeForOneSend = setInterval(() => {
-		if(i == emails.length){
-		    clearInterval(timeForOneSend);
-		    mailerStatus = MAIL_STATUS.SENDING_COMPLETE
-		}else{
-			// Рендер письма
-				currentTemplate.render(locals, (err, result) => {
-					i++;
-					if (err) {
-						errorCallback(MAIL_STATUS.ERROR_TEMPLATE, err)
-							return console.error(err)
-					}
-					transporter.sendMail({
-							from: mailOptions.from(),
-							to: emails[i],
-							subject: mailOptions.subject,
-							html: result.html,
-							text: result.text
-						}, (err, info) => {
-								if (err) {
-									errorCallback(MAIL_STATUS.ERROR_SENDING, err)
-									return console.error('>>> ERROR mailerGoSend ошибка отправки ', err)
-								}
-								console.log('------------------------------------------------------------------------');
-								console.log('Сообщение отправлено на адрес: ' + emails[i] + '   ' + info.response);
-								successCallback(MAIL_STATUS.SENDING_COMPLETE);
-						}
-					);
+	emails = emails.filter(part => Array.isArray(part) && part.length)
+	for (let email of emails) {
+		// Рендер письма
+		currentTemplate.render(locals, async (err, result) => {
+			if (err) {
+				console.error(`>>> ERROR currentTemplate.render error`, err)
+				throw err
+			}
+
+			try {
+				await delay(100)
+
+				await transporter.sendMail({
+					from: mailOptions.from(),
+					to: email,
+					subject: mailOptions.subject,
+					html: result.html,
+					text: result.text
 				})
-		}
-	}, timeForOneSend);
+				console.log(`Письмо успешно отправлено на ${email}`)
+			} catch(err) {
+				console.error(`>>> ERROR Не удалось отправить письмо на  ${email}`, err);			
+			}
+		})
+	}
 }
 
 module.exports = mailerGoSend
