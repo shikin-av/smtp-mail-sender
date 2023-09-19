@@ -15,5 +15,6 @@
   "dbFolder": "/db",
   "staticFolder": "/static",
 
-  "emailTest": ""
+  "emailTest": "",
+  "SENDING_DELAY": 100
 }

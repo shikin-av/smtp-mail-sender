@@ -10,12 +10,12 @@ multiparty = require('multiparty'),
 clientSessions = require("client-sessions"),
 fsUtils = require("nodejs-fs-utils"),
 CONFIG = require('./CONFIG.json'),
-CONSTANTS = require('./api/constants'),
-mailerGoSend = require('./api/mailerGoSend'),
-mailerGoTest = require('./api/mailerGoTest'),
-folderViewer = require('./api/folderViewer'),
-csvFilesCallback = require('./api/csvFilesCallback'),
-setDefaultTemplate = require('./api/setDefaultTemplate')
+CONSTANTS = require('./lib/constants'),
+mailerGoSend = require('./lib/mailerGoSend'),
+mailerGoTest = require('./lib/mailerGoTest'),
+folderViewer = require('./lib/folderViewer'),
+csvFilesCallback = require('./lib/csvFilesCallback'),
+setDefaultTemplate = require('./lib/setDefaultTemplate')
 
 const { TYPE, MAIL_STATUS } = CONSTANTS
 const	app = express()
@@ -27,7 +27,6 @@ let currentTemplate
 let mailTemplates = []	// список шаблонов
 let csvFiles = []	// список csv-файлов
 let emails = []
-let timeForOneSend = 1000 // интервал между отправками писем
 let successfullySent = 0	 // успешно отправленных писем (текущая рассылка)
 
 let mailOptions = {
@@ -147,14 +146,19 @@ app.post('/', urlencodedParser, async (req, res) => {
 			console.log('Рассылка началась ..........................................................')
 			
 			try {
+				let num = 0
 				await mailerGoSend({ 
 					emails,
 					locals,
 					mailOptions, 
 					transporter,
 					currentTemplate,
+				}, () => {
+					num++
+					if (num >= emails.length) {
+						mailerStatus = MAIL_STATUS.SENDING_COMPLETE
+					}
 				})
-				mailerStatus = MAIL_STATUS.SENDING_COMPLETE
 			} catch(err) {
 				mailerStatus = MAIL_STATUS.ERROR_SENDING
 				console.error(`>>> ERROR Ошибка отправки`, err);			
