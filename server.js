@@ -155,8 +155,9 @@ app.post('/', urlencodedParser, async (req, res) => {
 					currentTemplate,
 				}, () => {
 					num++
+					mailerStatus = `Письма отправлены на ${num} адресов`
 					if (num >= emails.length) {
-						mailerStatus = MAIL_STATUS.SENDING_COMPLETE
+						mailerStatus = `${MAIL_STATUS.SENDING_COMPLETE} на ${num} адресов`
 					}
 				})
 			} catch(err) {
@@ -189,7 +190,7 @@ app.post('/', urlencodedParser, async (req, res) => {
 			})	
 
 			mailerStatus = MAIL_STATUS.SENDING_COMPLETE
-			console.log(`Тестовоее письмо УСПЕШНО оправлено на ${req.body.address}`);
+			console.log(`Тестовое письмо УСПЕШНО оправлено на ${req.body.address}`);
 		} catch(err) {
 			mailerStatus = MAIL_STATUS.ERROR_SENDING
 			console.error(`>>> ERROR Не удалось отправить письмо на тестовый ящик ${req.body.address}`, err);			
