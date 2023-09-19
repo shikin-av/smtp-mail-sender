@@ -1,4 +1,4 @@
-var statusTimerMSeconds = 5000; // 5 сек
+var statusTimerMSeconds = 1000; // 5 сек
 
 changeTemplate = function(){
     var selectedTemplate = $('#templatesMail').val();

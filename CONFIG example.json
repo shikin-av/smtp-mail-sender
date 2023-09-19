@@ -1,20 +1,20 @@
 {
-  "host": "localhost",
-  "port": 80,
+  "HOST": "localhost",
+  "PORT": 80,
 
-  "appUser": "",
-  "appPass": "",
-  "secret": "",
+  "LOGIN": "",
+  "APP_PASSWORD": "",
+  "SECRET": "",
 
-  "smtpHost": "mail.nic.ru",
-  "smtpPort": 25,
-  "smtpUser": "",
-  "smtpPass": "",
+  "SMTP_HOST": "mail.nic.ru",
+  "SMTP_PORT": 25,
+  "SMTP_USER": "",
+  "SMTP_PASSWORD": "",
 
-  "mailTemplateFolder": "/templates/email-templates",
-  "dbFolder": "/db",
+  "MAIL_TEMPLATE_FOLDER": "/templates/email-templates",
+  "DB_FOLDER": "/db",
   "staticFolder": "/static",
 
-  "emailTest": "",
+  "TEST_EMAIL": "",
   "SENDING_DELAY": 100
 }
