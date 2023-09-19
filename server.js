@@ -1,7 +1,6 @@
 const nodemailer = require('nodemailer'),
 smtpTransport = require('nodemailer-smtp-transport'),
 express = require('express'),
-fs = require('fs'),
 EmailTemplate = require('email-templates').EmailTemplate,
 path = require('path'),
 bodyParser = require('body-parser'),
@@ -25,9 +24,8 @@ let mailerStatus = MAIL_STATUS.READY_FOR_SEND
 let locals = {host: CONFIG.HOST}
 let currentTemplate
 let mailTemplates = []	// список шаблонов
-let csvFiles = []	// список csv-файлов
+let csvFiles = []				// список csv-файлов
 let emails = []
-let successfullySent = 0	 // успешно отправленных писем (текущая рассылка)
 
 let mailOptions = {
 	fromForUserWatch: 'От меня',	// TODO:
@@ -65,15 +63,13 @@ folderViewer({
 
 
 // Шаблонизатор
-let templating = require('consolidate');
-app.engine('hbs', templating.handlebars);
-app.set('view engine', 'hbs');    
-app.set('views', __dirname + '/templates');
+const templating = require('consolidate')
+app.engine('hbs', templating.handlebars)
+app.set('view engine', 'hbs')
+app.set('views', __dirname + '/templates')
 
 app.get('/', function (req, res) {
 	if (req.session_state.username) {  
-	  console.log('/');
-
 		// смотрим сколько шаблонов
 	  folderViewer({
 			folder: `${__dirname}${CONFIG.MAIL_TEMPLATE_FOLDER}`, 
@@ -82,11 +78,9 @@ app.get('/', function (req, res) {
 			callback: () => {},	
 		})
 
-	  //------------------------------
 	  if(mailerStatus == MAIL_STATUS.NO_EMAILS && emails != 0){
-	  	  mailerStatus = MAIL_STATUS.READY_FOR_SEND;
+	  	  mailerStatus = MAIL_STATUS.READY_FOR_SEND
 	  }
-	  //------------------------------
 	  
 	  res.render('views/index', {
 	      host: CONFIG.HOST, 
@@ -107,7 +101,6 @@ app.post('/', urlencodedParser, async (req, res) => {
 		? req.body.selectedTemplate
 		: 'hello'
 
-	console.log(`>>> TYPE: ${req.body.type}`)
 	console.log(`>>> STATUS: ${mailerStatus}`)
 
 	if(req.body.type == TYPE.CHANGE_TEMPLATE_AND_SUBJECT){
@@ -163,7 +156,7 @@ app.post('/', urlencodedParser, async (req, res) => {
 				})
 			} catch(err) {
 				mailerStatus = MAIL_STATUS.ERROR_SENDING
-				console.error(`>>> ERROR Ошибка отправки`, err);			
+				console.error(`>>> ERROR Ошибка отправки`, err)	
 			}
 		}else{
 			mailerStatus = MAIL_STATUS.NO_EMAILS;
@@ -191,47 +184,44 @@ app.post('/', urlencodedParser, async (req, res) => {
 			})	
 
 			mailerStatus = MAIL_STATUS.SENDING_COMPLETE
-			console.log(`Тестовое письмо УСПЕШНО оправлено на ${req.body.address}`);
-		} catch(err) {
+			console.log(`Тестовое письмо УСПЕШНО оправлено на ${req.body.address}`)
+		} catch (err) {
 			mailerStatus = MAIL_STATUS.ERROR_SENDING
-			console.error(`>>> ERROR Не удалось отправить письмо на тестовый ящик ${req.body.address}`, err);			
+			console.error(`>>> ERROR Не удалось отправить письмо на тестовый ящик ${req.body.address}`, err)	
 		}
 	}
 
 	if(req.body.type == TYPE.GET_STATUS){
-		res.render('views/send', {mailerStatus});
-		// console.log('####### Проверка статуса', mailerStatus);
+		res.render('views/send', {mailerStatus})
 	}
 
 	if(req.body.type == TYPE.SET_FROM){
 		//mailOptions.from = req.body.from + ' <'+CONFIG.SMTP_USER+'>';	// "input От кого"
-		mailOptions.fromForUserWatch = req.body.from;	// "input От кого"
-		console.log('От: ' + req.body.from);
+		mailOptions.fromForUserWatch = req.body.from	// "input От кого"
+		console.log('От: ' + req.body.from)
 	}
-});
+})
 
-//**********************************************************
 app.get('/emails', function (req, res) {
 	if (req.session_state.username) {  
-		res.render('views/emails', {host: CONFIG.HOST, emails_length: emails.length});
-		console.log('/emails');
-	}else{
-		res.redirect('/login');
+		res.render('views/emails', { host: CONFIG.HOST, emails_length: emails.length })
+		console.log('/emails')
+	} else {
+		res.redirect('/login')
 	}
-});
-//**********************************************************
+})
+
 app.post('/emails', urlencodedParser, function (req, res) {
 
 	if(req.body.type == TYPE.DELETE_ALL_CSV_FILES){
 		fsUtils.emptyDir(__dirname + '/db', function (err) {
 			if(err){
-				return console.error(err);
+				return console.error(err)
 			}else{
-				res.render('views/filesDeleted', {host: CONFIG.HOST});	
-				emails = [];
+				res.render('views/filesDeleted', { host: CONFIG.HOST })
+				emails = []
 		}
-	});
-
+	})
 	}else{
 		// загрузка файлов на сервер
 		let form = new multiparty.Form({
@@ -239,13 +229,13 @@ app.post('/emails', urlencodedParser, function (req, res) {
 		})
 		form.parse(req, function(err, fields, files) {
 			if (err) {
-				res.writeHead(400, {'content-type': 'text/plain'});	//!!!!!!!!!
+				res.writeHead(400, {'content-type': 'text/plain'})
 				res.end("invalid request: " + err.message);
 				return;
 			}
 			console.log('Загруженные файлы: ');	
 			for(let i = 0; i<files.upload.length; i++){
-				console.log(files.upload[i].originalFilename);				
+				console.log(files.upload[i].originalFilename)			
 			}
 		
 			csvFiles = [];
@@ -256,39 +246,37 @@ app.post('/emails', urlencodedParser, function (req, res) {
 				emails,
 				callback: csvFilesCallback ,
 			})	// читаем адреса из csv-файлов
-				res.render('views/filesUploaded', {host: CONFIG.HOST});	
-		});
+				res.render('views/filesUploaded', {host: CONFIG.HOST})
+		})
 	}    
-});
-//**********************************************************
+})
+
 app.get('/login', function (req, res) {
-	res.render('views/login', {host: CONFIG.HOST, port:CONFIG.PORT});
-	console.log('/login');
-});
+	res.render('views/login', {host: CONFIG.HOST, port:CONFIG.PORT})
+	console.log('/login')
+})
 app.post('/login', urlencodedParser, function (req, res) {
-	let login = req.body.login;
-	let pass = req.body.pass;
+	let login = req.body.login
+	let pass = req.body.pass
 
 	if(login == CONFIG.LOGIN && pass == CONFIG.PASSWORD){
-		req.session_state.username = login;
-		console.log('Login: ' + req.session_state.username);
-		//res.redirect('/');
-		res.send('corrected');
+		req.session_state.username = login
+		console.log('Login: ' + req.session_state.username)
+		//res.redirect('/')
+		res.send('corrected')
 	}else{
-		res.send('incorrected');
+		res.send('incorrected')
 	}
-});
+})
 
 app.get('/logout', function (req, res) {
-	req.session_state.reset();
-  	res.redirect('/login');
-});
-
-
+	req.session_state.reset()
+  	res.redirect('/login')
+})
 
 app.listen(CONFIG.PORT, function () {
-  console.log(`SERVER RUN ON ${CONFIG.HOST}:${CONFIG.PORT}`);
-});
+  console.log(`SERVER RUN ON ${CONFIG.HOST}:${CONFIG.PORT}`)
+})
 
  
  
