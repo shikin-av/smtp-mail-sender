@@ -18,7 +18,7 @@ setDefaultTemplate = require('./lib/setDefaultTemplate')
 
 const { TYPE, MAIL_STATUS } = CONSTANTS
 const	app = express()
-app.use(express.static(`${__dirname}${CONFIG.staticFolder}`))
+app.use(express.static(`${__dirname}${CONFIG.STATIC_FOLDER}`))
 
 let mailerStatus = MAIL_STATUS.READY_FOR_SEND
 let locals = {host: CONFIG.HOST}
