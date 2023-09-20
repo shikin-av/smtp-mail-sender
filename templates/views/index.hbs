@@ -47,14 +47,14 @@
                            
                            <form method="POST" action=":{{port}}">
                                 
-                                <input id="btnMailerGoSend" type="submit" value="Начать рассылку" onClick="mailerGoSend('mailerGoSend'); return false;">  
+                                <input id="btnsendMails" type="submit" value="Начать рассылку" onClick="sendMails('sendMails'); return false;">  
                            </form>
                     </div>
                     <div class="col-md-6 col-sm-12">
                            <p>Адрес Тестовой почты:</p>
                            <form method="POST" action=":{{port}}">
                                 <input type="text" id="emailTest" value="{{emailTest}}" class="fullWidthInput">
-                                <input type="submit" value="Отправить письмо на тестовую почту" onClick="mailerGoSend('mailerGoTest'); return false;">  
+                                <input type="submit" value="Отправить письмо на тестовую почту" onClick="sendMails('sendTestMail'); return false;">  
                            </form>
                     </div>
                     <!-- ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->

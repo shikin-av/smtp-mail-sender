@@ -10,8 +10,8 @@ clientSessions = require("client-sessions"),
 fsUtils = require("nodejs-fs-utils"),
 CONFIG = require('./CONFIG.json'),
 CONSTANTS = require('./lib/constants'),
-mailerGoSend = require('./lib/mailerGoSend'),
-mailerGoTest = require('./lib/mailerGoTest'),
+sendMails = require('./lib/sendMails'),
+sendTestMail = require('./lib/sendTestMail'),
 folderViewer = require('./lib/folderViewer'),
 csvFilesCallback = require('./lib/csvFilesCallback'),
 setDefaultTemplate = require('./lib/setDefaultTemplate')
@@ -28,11 +28,11 @@ let csvFiles = []				// список csv-файлов
 let emails = []
 
 let mailOptions = {
-	fromForUserWatch: 'От меня',	// TODO:
-	from: function(){
+	fromForUserWatch: CONFIG.DEFAULT_FROM,
+	from() {
 		return this.fromForUserWatch + ' <'+CONFIG.SMTP_USER+'>';
 	},
-	subject: 'Специально для Вас',	// TODO:
+	subject: CONFIG.DEFAULT_SUBJECT,
 	emailTest: CONFIG.TEST_EMAIL,
 }
  
@@ -55,7 +55,7 @@ app.use(clientSessions({ secret: CONFIG.SECRET }))
 
 // читаем адреса из csv-файлов
 folderViewer({
-	folder: `${__dirname}${CONFIG.DB_FOLDER}`,
+	folder: `${__dirname}${CONFIG.CSV_FOLDER}`,
 	files: csvFiles,
 	emails,
 	callback: csvFilesCallback,
@@ -68,7 +68,7 @@ app.engine('hbs', templating.handlebars)
 app.set('view engine', 'hbs')
 app.set('views', __dirname + '/templates')
 
-app.get('/', function (req, res) {
+app.get('/', (req, res) => {
 	if (req.session_state.username) {  
 		// смотрим сколько шаблонов
 	  folderViewer({
@@ -101,8 +101,6 @@ app.post('/', urlencodedParser, async (req, res) => {
 		? req.body.selectedTemplate
 		: 'hello'
 
-	console.log(`>>> STATUS: ${mailerStatus}`)
-
 	if(req.body.type == TYPE.CHANGE_TEMPLATE_AND_SUBJECT){
 		console.log('Выбран шаблон: ' + templateName);
 		// рендерим выбранный в select шаблон
@@ -128,7 +126,7 @@ app.post('/', urlencodedParser, async (req, res) => {
 	}
 	
 
-	if(req.body.type == TYPE.MAILER_GO_SEND){
+	if(req.body.type == TYPE.SENDING_MAILS){
 		if (!currentTemplate) {
 			currentTemplate = setDefaultTemplate(mailTemplates)
 		}
@@ -140,7 +138,7 @@ app.post('/', urlencodedParser, async (req, res) => {
 			
 			try {
 				let num = 0
-				await mailerGoSend({ 
+				await sendMails({ 
 					emails,
 					locals,
 					mailOptions, 
@@ -148,10 +146,10 @@ app.post('/', urlencodedParser, async (req, res) => {
 					currentTemplate,
 				}, () => {
 					num++
-					mailerStatus = `Письма отправлены на ${num} адресов`
-					console.log(`======= Письма отправлены на ${num} адресов`)
+					mailerStatus = `Письма отправлены на ${num} / ${emails.length} адресов`
+					console.log(`======= Письма отправлены на ${num}/${emails.length} адресов`)
 					if (num >= emails.length) {
-						mailerStatus = `${MAIL_STATUS.SENDING_COMPLETE} на ${num} адресов`
+						mailerStatus = `${MAIL_STATUS.SENDING_COMPLETE} на ${num}/${emails.length} адресов`
 					}
 				})
 			} catch(err) {
@@ -160,22 +158,22 @@ app.post('/', urlencodedParser, async (req, res) => {
 			}
 		}else{
 			mailerStatus = MAIL_STATUS.NO_EMAILS;
-			res.render('views/send', {mailerStatus})
+			res.render('views/send', { mailerStatus })
 		}
 	}
 
-	if(req.body.type == TYPE.MAILER_GO_TEST){
+	if(req.body.type == TYPE.SENDING_TEST_MAIL){
 		if (!currentTemplate) {
 			currentTemplate = setDefaultTemplate(mailTemplates)
 		}
 
 		mailerStatus = MAIL_STATUS.TEST_SENDING
-		res.render('views/send', {mailerStatus})
+		res.render('views/send', { mailerStatus })
 		console.log('Тестовое письмо ..........................................................')
 		mailOptions.emailTest = req.body.address
 		
 		try {
-			await mailerGoTest({ 
+			await sendTestMail({ 
 				email: req.body.address, 
 				locals, 
 				mailOptions,
@@ -192,7 +190,7 @@ app.post('/', urlencodedParser, async (req, res) => {
 	}
 
 	if(req.body.type == TYPE.GET_STATUS){
-		res.render('views/send', {mailerStatus})
+		res.render('views/send', { mailerStatus })
 	}
 
 	if(req.body.type == TYPE.SET_FROM){
@@ -202,7 +200,7 @@ app.post('/', urlencodedParser, async (req, res) => {
 	}
 })
 
-app.get('/emails', function (req, res) {
+app.get('/emails', (req, res) => {
 	if (req.session_state.username) {  
 		res.render('views/emails', { host: CONFIG.HOST, emails_length: emails.length })
 		console.log('/emails')
@@ -211,10 +209,10 @@ app.get('/emails', function (req, res) {
 	}
 })
 
-app.post('/emails', urlencodedParser, function (req, res) {
+app.post('/emails', urlencodedParser, (req, res) => {
 
 	if(req.body.type == TYPE.DELETE_ALL_CSV_FILES){
-		fsUtils.emptyDir(__dirname + '/db', function (err) {
+		fsUtils.emptyDir(__dirname + '/db', err => {
 			if(err){
 				return console.error(err)
 			}else{
@@ -225,11 +223,11 @@ app.post('/emails', urlencodedParser, function (req, res) {
 	}else{
 		// загрузка файлов на сервер
 		let form = new multiparty.Form({
-			uploadDir:  `${__dirname}${CONFIG.DB_FOLDER}`
+			uploadDir:  `${__dirname}${CONFIG.CSV_FOLDER}`
 		})
-		form.parse(req, function(err, fields, files) {
+		form.parse(req, (err, fields, files) => {
 			if (err) {
-				res.writeHead(400, {'content-type': 'text/plain'})
+				res.writeHead(400, { 'content-type': 'text/plain' })
 				res.end("invalid request: " + err.message);
 				return;
 			}
@@ -241,21 +239,21 @@ app.post('/emails', urlencodedParser, function (req, res) {
 			csvFiles = [];
 			
 			folderViewer({
-				folder: `${__dirname}${CONFIG.DB_FOLDER}`, 
+				folder: `${__dirname}${CONFIG.CSV_FOLDER}`, 
 				files: csvFiles, 
 				emails,
 				callback: csvFilesCallback ,
 			})	// читаем адреса из csv-файлов
-				res.render('views/filesUploaded', {host: CONFIG.HOST})
+				res.render('views/filesUploaded', { host: CONFIG.HOST })
 		})
 	}    
 })
 
-app.get('/login', function (req, res) {
-	res.render('views/login', {host: CONFIG.HOST, port:CONFIG.PORT})
+app.get('/login', (req, res) => {
+	res.render('views/login', { host: CONFIG.HOST, port: CONFIG.PORT })
 	console.log('/login')
 })
-app.post('/login', urlencodedParser, function (req, res) {
+app.post('/login', urlencodedParser, (req, res) => {
 	let login = req.body.login
 	let pass = req.body.pass
 
@@ -269,12 +267,12 @@ app.post('/login', urlencodedParser, function (req, res) {
 	}
 })
 
-app.get('/logout', function (req, res) {
+app.get('/logout', (req, res) => {
 	req.session_state.reset()
   	res.redirect('/login')
 })
 
-app.listen(CONFIG.PORT, function () {
+app.listen(CONFIG.PORT, () => {
   console.log(`SERVER RUN ON ${CONFIG.HOST}:${CONFIG.PORT}`)
 })
 

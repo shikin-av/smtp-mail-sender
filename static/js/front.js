@@ -56,7 +56,7 @@ getStatus = function(){
                     clearInterval(statusTimerGo);
                     setTimeout(function(){
                         $('.statusText').html('Готов начать рассылку');
-                        $("#btnMailerGoSend").prop('disabled', false); 
+                        $("#btnsendMails").prop('disabled', false); 
                     }, statusTimerMSeconds);
                 }
             }
@@ -64,13 +64,13 @@ getStatus = function(){
     }, statusTimerMSeconds);
 }
 
-mailerGoSend = function(type){
+sendMails = function(type){
     let address
-    if(type == 'mailerGoTest'){
+    if(type == 'sendTestMail'){
         address = $('#emailTest').val();
     }else{
         address = '';
-        $("#btnMailerGoSend").prop('disabled', true); 
+        $("#btnsendMails").prop('disabled', true); 
     }
     $.ajax({
         type: "POST",

@@ -12,9 +12,11 @@
   "SMTP_PASSWORD": "",
 
   "MAIL_TEMPLATE_FOLDER": "/templates/email-templates",
-  "DB_FOLDER": "/db",
+  "CSV_FOLDER": "/csv",
   "staticFolder": "/static",
 
   "TEST_EMAIL": "",
-  "SENDING_DELAY": 100
+  "SENDING_DELAY": 100,
+  "DEFAULT_SUBJECT": "Специально для Вас",
+  "DEFAULT_FROM": "От меня"
 }

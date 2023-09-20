@@ -20,7 +20,7 @@ code {
 .status h5{
 	    font-size: 18px;
 }
-input#btnMailerGoSend {
+input#btnsendMails {
     font-weight: bold;
     color: green;
 }
