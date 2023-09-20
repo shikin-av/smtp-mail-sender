@@ -139,7 +139,7 @@ app.post('/', urlencodedParser, async (req, res) => {
 			try {
 				let num = 0
 				await sendMails({ 
-					emails,
+					emailsData: emails,
 					locals,
 					mailOptions, 
 					transporter,
