@@ -25,7 +25,8 @@ let locals = {host: CONFIG.HOST}
 let currentTemplate
 let mailTemplates = []	// список шаблонов
 let csvFiles = []				// список csv-файлов
-let emails = []
+let emails = []	// emailsData { organization, role, fio, emails: []}
+let emailsCount = 0
 
 let mailOptions = {
 	fromForUserWatch: CONFIG.DEFAULT_FROM,
@@ -135,10 +136,12 @@ app.post('/', urlencodedParser, async (req, res) => {
 			mailerStatus = MAIL_STATUS.SENDING
 			res.render('views/send', {mailerStatus})
 			console.log('Рассылка началась ..........................................................')
+
+			emailsCount = emails.reduce((acc, val) => acc += val.emails.length, 0)
 			
 			try {
 				let num = 0
-				await sendMails({ 
+				await sendMails({
 					emailsData: emails,
 					locals,
 					mailOptions, 
@@ -146,8 +149,8 @@ app.post('/', urlencodedParser, async (req, res) => {
 					currentTemplate,
 				}, () => {
 					num++
-					mailerStatus = `Письма отправлены на ${num} / ${emails.length} адресов`
-					console.log(`======= Письма отправлены на ${num}/${emails.length} адресов`)
+					mailerStatus = `Письма отправлены на ${num} / ${emailsCount} адресов`
+					console.log(`======= Письма отправлены на ${num} / ${emailsCount} адресов`)
 					if (num >= emails.length) {
 						mailerStatus = `${MAIL_STATUS.SENDING_COMPLETE} на ${num}/${emails.length} адресов`
 					}
