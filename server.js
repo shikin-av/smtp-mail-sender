@@ -21,7 +21,9 @@ const	app = express()
 app.use(express.static(`${__dirname}${CONFIG.STATIC_FOLDER}`))
 
 let mailerStatus = MAIL_STATUS.READY_FOR_SEND
-let locals = {host: CONFIG.HOST}
+let locals = {
+	host: CONFIG.HOST,
+}
 let currentTemplate
 let mailTemplates = []	// список шаблонов
 let csvFiles = []				// список csv-файлов
@@ -110,7 +112,8 @@ app.post('/', urlencodedParser, async (req, res) => {
 				port: CONFIG.PORT,
 				templatesMail: mailTemplates,
 				subject:mailOptions.subject,
-				emailTest:mailOptions.emailTest
+				emailTest:mailOptions.emailTest,
+				// name: '<<<<<<< ITS I AM >>>>>>>>>'
 		})
 
 		// инициализация currentTemplate
@@ -137,7 +140,7 @@ app.post('/', urlencodedParser, async (req, res) => {
 			res.render('views/send', {mailerStatus})
 			console.log('Рассылка началась ..........................................................')
 
-			emailsCount = emails.reduce((acc, val) => acc += val.emails.length, 0)
+			emailsCount = emails.reduce((acc, val) => acc += val.emails.length, 0) - 1	// -1 для 1й строчки в csv файле 
 			
 			try {
 				let num = 0
